@@ -59,6 +59,7 @@ const Contact = (props) => {
           Email: ${data.email}
           Telegram: ${data.telegram}
           Organization: ${data.organization}
+          Region: ${data.region}
           
           Selected Chains: ${data.chains?.join(", ")}
           
@@ -149,6 +150,22 @@ const Contact = (props) => {
           />
         </div>
 
+        <div>
+          <label className="font-semibold mb-2 block">Select Region*</label>
+          <select
+            {...register("region", { required: true })}
+            className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
+          >
+            <option value="">Select region</option>
+            <option value="EUROPE">Europe</option>
+            <option value="USA">United States</option>
+            <option value="SINGAPORE">Singapore</option>
+          </select>
+          {errors.region && (
+            <span className="text-red-500 text-sm">This field is required</span>
+          )}
+        </div>
+
         <div className="flex flex-col gap-2">
           <label className="font-semibold">
             What chains are you interested in?*
@@ -190,15 +207,9 @@ const Contact = (props) => {
               {...register("clusterType", { required: true })}
               className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
             >
-              <option className="text-black" value="">
-                Select cluster type
-              </option>
-              <option className="text-black" value="Archival">
-                Archival
-              </option>
-              <option className="text-black" value="Mainnet">
-                Mainnet
-              </option>
+              <option value="">Select cluster type</option>
+              <option value="Archival">Archival</option>
+              <option value="Mainnet">Mainnet</option>
             </select>
             {errors.clusterType && (
               <span className="text-red-500 text-sm">
@@ -215,24 +226,9 @@ const Contact = (props) => {
               {...register("rpsRequirements", { required: true })}
               className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
             >
-              <option className="text-black" value="">
-                Select RPS requirements
-              </option>
-              <option className="text-black" value="50-300">
-                50-300
-              </option>
-              <option className="text-black" value="300-500">
-                300-500
-              </option>
-              <option className="text-black" value="500-800">
-                500-800
-              </option>
-              <option className="text-black" value="800-1200">
-                800-1200
-              </option>
-              <option className="text-black" value="1200+">
-                1200+
-              </option>
+              <option value="">Select RPS requirements</option>
+              <option value="0-1000">0-1000</option>
+              <option value="1000+">1000+</option>
             </select>
             {errors.rpsRequirements && (
               <span className="text-red-500 text-sm">
@@ -251,24 +247,12 @@ const Contact = (props) => {
               {...register("budget", { required: true })}
               className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
             >
-              <option className="text-black" value="">
-                Select budget range
-              </option>
-              <option className="text-black" value="-800">
-                Less than $800
-              </option>
-              <option className="text-black" value="800-1500">
-                $800 - $1,500
-              </option>
-              <option className="text-black" value="1500-3000">
-                $1,500 - $3,000
-              </option>
-              <option className="text-black" value="3000-6000">
-                $3,000 - $6,000
-              </option>
-              <option className="text-black" value="6000+">
-                $6,000+
-              </option>
+              <option value="">Select budget range</option>
+              <option value="-800">Less than $800</option>
+              <option value="800-1500">$800 - $1,500</option>
+              <option value="1500-3000">$1,500 - $3,000</option>
+              <option value="3000-6000">$3,000 - $6,000</option>
+              <option value="6000+">$6,000+</option>
             </select>
             {errors.budget && (
               <span className="text-red-500 text-sm">
@@ -285,18 +269,12 @@ const Contact = (props) => {
               {...register("timeline", { required: true })}
               className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
             >
-              <option className="text-black" value="">
-                Select timeline
-              </option>
-              <option className="text-black" value="1-7">
-                1-7 days
-              </option>
-              <option className="text-black" value="8-15">
-                8-15 days
-              </option>
-              <option className="text-black" value="16-30">
-                16-30 days
-              </option>
+              <option value="">Select timeline</option>
+              <option value="1-7">1-7 days</option>
+              <option value="8-15">8-15 days</option>
+              <option value="16-30">16-30 days</option>
+              <option value="31-60">31-60 days</option>
+              <option value="60+">60+ days</option>
             </select>
             {errors.timeline && (
               <span className="text-red-500 text-sm">

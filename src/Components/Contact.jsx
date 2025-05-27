@@ -59,6 +59,7 @@ const Contact = (props) => {
           Email: ${data.email}
           Telegram: ${data.telegram}
           Organization: ${data.organization}
+          Region: ${data.region}
           
           Selected Chains: ${data.chains?.join(", ")}
           
@@ -147,6 +148,22 @@ const Contact = (props) => {
             required
             errors={errors.organization}
           />
+        </div>
+
+        <div>
+          <label className="font-semibold mb-2 block">Select Region*</label>
+          <select
+            {...register("region", { required: true })}
+            className="p-2 rounded-lg outline-none bg-white/10 border border-white w-full"
+          >
+            <option value="">Select region</option>
+            <option value="EUROPE">Europe</option>
+            <option value="USA">United States</option>
+            <option value="SINGAPORE">Singapore</option>
+          </select>
+          {errors.region && (
+            <span className="text-red-500 text-sm">This field is required</span>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">

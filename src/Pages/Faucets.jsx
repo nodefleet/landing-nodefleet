@@ -326,7 +326,22 @@ const Faucets = () => {
                       </div>
                       <div>
                         {blockchain.faucetLink ? (
-                          isValidUrl(blockchain.faucetLink) ? (
+                          blockchain.name.toLowerCase() === "snapshot" ? (
+                            <>
+                              <a
+                                href={blockchain.faucetLink}
+                                download
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
+                              >
+                                {blockchain.name}{" "}
+                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
+                                  <i className="fa-solid fa-download text-xl"></i>
+                                </div>
+                              </a>
+                            </>
+                          ) : isValidUrl(blockchain.faucetLink) ? (
                             <a
                               href={blockchain.faucetLink}
                               target="_blank"

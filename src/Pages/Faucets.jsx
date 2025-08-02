@@ -152,9 +152,6 @@ const Faucets = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <h1 className="text-2xl md:text-4xl mb-2">
-            RPC public <b>endpoints</b>
-          </h1>
           <hr className="w-10/12 h-1 bg-white" />
           <h2 className="text-2xl md:text-4xl">Public Nodes</h2>
         </motion.div>

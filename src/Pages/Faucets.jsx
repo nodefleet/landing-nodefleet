@@ -10,6 +10,7 @@ const Faucets = () => {
   const [filteredBlockchains, setFilteredBlockchains] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEndpoints, setSelectedEndpoints] = useState({});
+  const [selectedSnapshots, setSelectedSnapshots] = useState({});
   const [filters, setFilters] = useState({
     network: "all",
     nodeType: "all",
@@ -31,13 +32,22 @@ const Faucets = () => {
         }));
 
         const initialEndpoints = {};
+        const initialSnapshots = {};
         blockchainsData.forEach((blockchain) => {
           if (blockchain.rpcLinks && blockchain.rpcLinks.length > 0) {
             initialEndpoints[blockchain.id] = blockchain.rpcLinks[0];
           }
+          if (
+            blockchain.snapshotLink &&
+            Array.isArray(blockchain.snapshotLink) &&
+            blockchain.snapshotLink.length > 0
+          ) {
+            initialSnapshots[blockchain.id] = blockchain.snapshotLink[0];
+          }
         });
 
         setSelectedEndpoints(initialEndpoints);
+        setSelectedSnapshots(initialSnapshots);
         setBlockchains(blockchainsData);
         setFilteredBlockchains(blockchainsData);
         setLoading(false);
@@ -84,6 +94,17 @@ const Faucets = () => {
     if (link) {
       setSelectedEndpoints({
         ...selectedEndpoints,
+        [blockchainId]: link,
+      });
+    }
+  };
+
+  const handleSnapshotChange = (event, links, blockchainId) => {
+    const selectedValue = event.target.value;
+    const link = links.find((link) => link.value === selectedValue);
+    if (link) {
+      setSelectedSnapshots({
+        ...selectedSnapshots,
         [blockchainId]: link,
       });
     }
@@ -358,13 +379,57 @@ const Faucets = () => {
                             </div>
                           </div>
 
+                          {/* Para la vista móvil */}
                           <div className="flex flex-col">
                             <div className="text-gray-300 font-medium mb-2">
                               Snapshot:
                             </div>
                             <div className="flex justify-center">
                               {blockchain.snapshotLink ? (
-                                blockchain.name.toLowerCase() === "snapshot" ? (
+                                Array.isArray(blockchain.snapshotLink) ? (
+                                  <div className="bg-[#3d4954] px-3 py-3 rounded-lg w-full">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <i className="fa-solid fa-link"></i>
+                                      <a
+                                        href={
+                                          selectedSnapshots[blockchain.id]
+                                            ?.value
+                                        }
+                                        className="text-white text-sm font-medium"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        Snapshot link
+                                      </a>
+                                    </div>
+                                    <select
+                                      onChange={(e) =>
+                                        handleSnapshotChange(
+                                          e,
+                                          blockchain.snapshotLink,
+                                          blockchain.id
+                                        )
+                                      }
+                                      value={
+                                        selectedSnapshots[blockchain.id]
+                                          ?.value || ""
+                                      }
+                                      className="text-[#3d4954] text-sm font-bold focus:outline-[#99dfaf] px-3 py-1.5 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-full"
+                                    >
+                                      {blockchain.snapshotLink.map(
+                                        (link, index) => (
+                                          <option
+                                            key={index}
+                                            value={link.value}
+                                          >
+                                            {link.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                  </div>
+                                ) : blockchain.name.toLowerCase() ===
+                                  "snapshot" ? (
                                   <>
                                     <a
                                       href={blockchain.snapshotLink}
@@ -508,7 +573,45 @@ const Faucets = () => {
 
                         <div>
                           {blockchain.snapshotLink ? (
-                            blockchain.name.toLowerCase() === "snapshot" ? (
+                            Array.isArray(blockchain.snapshotLink) ? (
+                              <div className="flex gap-4 bg-[#3d4954] px-3 py-3 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <i className="fa-solid fa-link"></i>
+                                  <a
+                                    href={
+                                      selectedSnapshots[blockchain.id]?.value
+                                    }
+                                    className="text-white text-lg font-medium text-nowrap"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Snapshot
+                                  </a>
+                                </div>
+                                <select
+                                  onChange={(e) =>
+                                    handleSnapshotChange(
+                                      e,
+                                      blockchain.snapshotLink,
+                                      blockchain.id
+                                    )
+                                  }
+                                  value={
+                                    selectedSnapshots[blockchain.id]?.value ||
+                                    ""
+                                  }
+                                  className="text-[#3d4954] text-lg font-bold focus:outline-[#99dfaf] px-4 py-2 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-auto"
+                                >
+                                  {blockchain.snapshotLink.map(
+                                    (link, index) => (
+                                      <option key={index} value={link.value}>
+                                        {link.label}
+                                      </option>
+                                    )
+                                  )}
+                                </select>
+                              </div>
+                            ) : blockchain.name.toLowerCase() === "snapshot" ? (
                               <>
                                 <a
                                   href={blockchain.snapshotLink}

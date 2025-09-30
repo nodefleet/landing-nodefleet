@@ -352,6 +352,14 @@ const Faucets = () => {
                                       <i className="fa-solid fa-download"></i>
                                     </a>
                                   </>
+                                ) : blockchain.faucetLink === "passage" ? (
+                                  <Link
+                                    to={`/faucets/${blockchain.id}`}
+                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                  >
+                                    Faucet{" "}
+                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                  </Link>
                                 ) : isValidUrl(blockchain.faucetLink) ? (
                                   <a
                                     href={blockchain.faucetLink}
@@ -539,6 +547,16 @@ const Faucets = () => {
                                   </div>
                                 </a>
                               </>
+                            ) : blockchain.faucetLink === "passage" ? (
+                              <Link
+                                to={`/faucets/${blockchain.id}`}
+                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
+                              >
+                                {blockchain.name}{" "}
+                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
+                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
+                                </div>
+                              </Link>
                             ) : isValidUrl(blockchain.faucetLink) ? (
                               <a
                                 href={blockchain.faucetLink}

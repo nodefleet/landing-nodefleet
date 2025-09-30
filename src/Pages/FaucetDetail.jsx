@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase.config";
 import Contact from "../Components/Contact";
 import { signInWithPopup, GithubAuthProvider } from "firebase/auth";
@@ -11,12 +11,17 @@ import toast from "react-hot-toast";
 
 const FaucetDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [blockchain, setBlockchain] = useState(null);
   const [loading, setLoading] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [user, setUser] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [faucetManager, setFaucetManager] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [validatorInfo, setValidatorInfo] = useState(null);
+  const [availableBlockchains, setAvailableBlockchains] = useState([]);
 
   useEffect(() => {
     const fetchBlockchain = async () => {
@@ -25,7 +30,8 @@ const FaucetDetail = () => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setBlockchain(docSnap.data());
+          const data = docSnap.data();
+          setBlockchain({ id: docSnap.id, ...data });
         }
         setLoading(false);
       } catch (error) {
@@ -34,8 +40,133 @@ const FaucetDetail = () => {
       }
     };
 
+    const fetchAvailableBlockchains = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "blockchains"));
+        const blockchains = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Solo incluir blockchains que tengan faucet
+          if (data.faucetLink && data.faucetLink !== "N/A") {
+            blockchains.push({ id: doc.id, ...data });
+          }
+        });
+        setAvailableBlockchains(blockchains);
+      } catch (error) {
+        console.error("Error fetching blockchains:", error);
+      }
+    };
+
     fetchBlockchain();
+    fetchAvailableBlockchains();
   }, [id]);
+
+  useEffect(() => {
+    const initializeFaucet = async () => {
+      if (!blockchain) return;
+
+      // Limpiar estado anterior
+      setFaucetManager(null);
+      setBalance(null);
+      setValidatorInfo(null);
+
+      try {
+        // Debug: mostrar todos los campos del blockchain
+        console.log("Blockchain data:", blockchain);
+        console.log("Available fields:", Object.keys(blockchain));
+        console.log("faucetRPC:", blockchain.faucetRPC);
+        console.log("faucetLink:", blockchain.faucetLink);
+
+        let manager;
+        let privateKeyOrMnemonic;
+
+        if (blockchain.name === "Passage") {
+          // Configuración para Passage - usar RPC de Firebase
+          privateKeyOrMnemonic = process.env.REACT_APP_PASSAGE_FAUCET_MNEMONIC;
+          if (!privateKeyOrMnemonic) {
+            console.warn(
+              "REACT_APP_PASSAGE_FAUCET_MNEMONIC no está configurado"
+            );
+            return;
+          }
+
+          // Usar faucetRPC de Firebase
+          const passageRpc =
+            blockchain.faucetRPC ||
+            "https://api.resolute.vitwit.com/passage_testrpc/";
+
+          // Usar chain ID de Firebase o fallback
+          const passageChainId = blockchain.chainId || "passage-testnet-1";
+
+          manager = new FaucetManager(
+            "cosmos",
+            passageChainId,
+            passageRpc,
+            privateKeyOrMnemonic
+          );
+        } else {
+          // Configuración para Ethereum/Story Protocol - usar configuración del blockchain
+          privateKeyOrMnemonic = process.env.REACT_APP_FAUCET_PRIVATE_KEY;
+          if (!privateKeyOrMnemonic) {
+            console.warn("REACT_APP_FAUCET_PRIVATE_KEY no está configurado");
+            return;
+          }
+
+          const chainId = parseInt(blockchain.chainId) || 1516;
+          const ethereumRpc =
+            blockchain.faucetRPC || "https://story-mainnet.us.nodefleet.net";
+
+          manager = new FaucetManager(
+            "ethereum",
+            chainId,
+            ethereumRpc,
+            privateKeyOrMnemonic
+          );
+        }
+
+        // Inicializar el manager
+        console.log(`Inicializando faucet manager para: ${blockchain.name}`);
+        await manager.initialize();
+
+        try {
+          const balanceInfo = await manager.getBalance();
+          setBalance(balanceInfo);
+        } catch (balanceError) {
+          console.warn("Could not get balance, using simulated balance");
+          setBalance({
+            amount: "1000000000000000000",
+            formatted: "1.0 ETH (simulado)",
+            denom: "ETH",
+            simulated: true,
+          });
+        }
+
+        const validatorInfo = manager.getValidatorInfo();
+
+        setFaucetManager(manager);
+        // Solo mostrar validatorInfo para Cosmos
+        if (blockchain.name === "Passage") {
+          setValidatorInfo(validatorInfo);
+        } else {
+          setValidatorInfo(null);
+        }
+      } catch (error) {
+        console.error("Error initializing faucet:", error);
+        // No mostrar toast de error si es por variables de entorno faltantes
+        if (!error.message.includes("Private key or mnemonic is required")) {
+          toast.error("Error inicializando faucet");
+        }
+      }
+    };
+
+    initializeFaucet();
+  }, [blockchain]);
+
+  const handleBlockchainChange = (blockchainId) => {
+    if (blockchainId !== id) {
+      navigate(`/faucets/${blockchainId}`);
+    }
+  };
 
   const handleGithubLogin = async () => {
     try {
@@ -51,27 +182,27 @@ const FaucetDetail = () => {
   };
 
   const handleRequestTokens = async () => {
-    if (!user || !walletAddress) return;
+    if (!user || !walletAddress || isProcessing || !faucetManager) return;
 
     setIsProcessing(true);
     try {
-      if (!blockchain.rpcLinks || blockchain.rpcLinks.length === 0) {
-        throw new Error("No RPC endpoints available");
+      // Validar dirección según el tipo de blockchain
+      if (!faucetManager.validateAddress(walletAddress)) {
+        const placeholder = faucetManager.getAddressPlaceholder();
+        throw new Error(
+          `Formato de dirección inválido. Debe ser: ${placeholder}`
+        );
       }
 
-      const chainId = parseInt(blockchain.chainId) || 1516;
-
-      const faucetManager = new FaucetManager(
-        chainId,
-        blockchain.rpcLinks[0].value,
-        process.env.REACT_APP_FAUCET_PRIVATE_KEY || ""
-      );
-
       await faucetManager.sendTransaction(walletAddress, user.uid);
-      toast.success("Tokens sent successfully!");
+      toast.success("¡Tokens enviados exitosamente!");
+
+      // Actualizar balance
+      const newBalance = await faucetManager.getBalance();
+      setBalance(newBalance);
     } catch (error) {
       console.error("Faucet error:", error);
-      toast.error(error.message || "Failed to send tokens");
+      toast.error(error.message || "Error al enviar tokens");
     } finally {
       setIsProcessing(false);
     }
@@ -113,9 +244,80 @@ const FaucetDetail = () => {
           >
             <div className="mb-8">
               <h3 className="text-gray-400 text-sm mb-2">Network</h3>
-              <h1 className="text-4xl font-bold mb-6">
+              <h1 className="text-4xl font-bold mb-4">
                 {blockchain.name} Faucet
               </h1>
+
+              {/* Selector de blockchain */}
+              <div className="mb-4">
+                <label className="block text-gray-400 text-sm mb-2">
+                  Seleccionar Blockchain
+                </label>
+                <select
+                  value={id}
+                  onChange={(e) => handleBlockchainChange(e.target.value)}
+                  className="px-4 py-2 rounded-lg bg-[#3d4954] text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7a65d0]"
+                >
+                  {availableBlockchains.map((bc) => (
+                    <option key={bc.id} value={bc.id}>
+                      {bc.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Información del validador para Cosmos */}
+              {process.env.NODE_ENV === "development" && validatorInfo && blockchain.name === "Passage" && (
+                <div className="mb-4 p-4 bg-[#3d4954] rounded-lg">
+                  <h4 className="text-lg font-semibold mb-3 text-[#7a65d0]">
+                    Información del Validador
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Dirección:</span>
+                      <span className="text-white">
+                        {validatorInfo.address}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Chain ID:</span>
+                      <span className="text-white">
+                        {validatorInfo.chainId}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">RPC:</span>
+                      <span className="text-white">{validatorInfo.rpcUrl}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Balance del faucet - Solo en modo desarrollo */}
+              {balance && process.env.NODE_ENV === "development" && (
+                <div className="mb-4 p-4 bg-[#3d4954] rounded-lg">
+                  <h4 className="text-lg font-semibold mb-2 text-[#7a65d0]">
+                    Balance del Faucet (Dev Mode)
+                  </h4>
+                  <p className="text-2xl font-bold text-white">
+                    {balance.formatted}
+                  </p>
+                </div>
+              )}
+
+              {/* Mensaje cuando no hay configuración */}
+              {process.env.NODE_ENV === "development" && !faucetManager && (
+                <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <h4 className="text-lg font-semibold mb-2 text-yellow-400">
+                    ⚠️ Configuración Requerida
+                  </h4>
+                  <p className="text-yellow-200 text-sm">
+                    {blockchain.name === "Passage"
+                      ? "Para usar el faucet de Passage, configura REACT_APP_PASSAGE_FAUCET_MNEMONIC (mnemonic o private key) en las variables de entorno."
+                      : "Para usar el faucet de Story Protocol, configura REACT_APP_FAUCET_PRIVATE_KEY en las variables de entorno."}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
@@ -143,12 +345,21 @@ const FaucetDetail = () => {
                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#3c7b97] text-white flex items-center justify-center text-xs">
                   2
                 </div>
-                <h3 className="text-lg mb-2">Type your wallet address</h3>
+                <h3 className="text-lg mb-2">Ingresa tu dirección de wallet</h3>
+                <p className="text-gray-400 text-sm mb-2">
+                  {blockchain.name === "Passage"
+                    ? "Dirección de Passage (comienza con pasg1)"
+                    : "Dirección de Story Protocol (comienza con 0x)"}
+                </p>
                 <input
                   type="text"
                   value={walletAddress}
                   onChange={(e) => setWalletAddress(e.target.value)}
-                  placeholder="0x..."
+                  placeholder={
+                    faucetManager
+                      ? faucetManager.getAddressPlaceholder()
+                      : "..."
+                  }
                   className="w-full px-4 py-2 rounded-lg bg-[#3d4954] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7a65d0]"
                   disabled={!isConnected}
                 />
@@ -161,9 +372,17 @@ const FaucetDetail = () => {
                 </div>
                 <button
                   onClick={handleRequestTokens}
-                  disabled={!isConnected || !walletAddress || isProcessing}
+                  disabled={
+                    !isConnected ||
+                    !walletAddress ||
+                    isProcessing ||
+                    !faucetManager
+                  }
                   className={`px-6 py-3 rounded-lg ${
-                    isConnected && walletAddress && !isProcessing
+                    isConnected &&
+                    walletAddress &&
+                    !isProcessing &&
+                    faucetManager
                       ? "bg-[#7a65d0] hover:bg-[#5538ce]"
                       : "bg-gray-600 cursor-not-allowed"
                   } transition-colors`}
@@ -171,10 +390,12 @@ const FaucetDetail = () => {
                   {isProcessing ? (
                     <span className="flex items-center gap-2">
                       <i className="fas fa-spinner animate-spin"></i>{" "}
-                      Processing...
+                      Procesando...
                     </span>
+                  ) : blockchain.name === "Passage" ? (
+                    "Solicitar tokens (1 PASG)"
                   ) : (
-                    "Request tokens"
+                    "Solicitar tokens (1 STORY)"
                   )}
                 </button>
               </div>

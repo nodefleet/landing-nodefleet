@@ -1,7 +1,8 @@
 import { ethers } from "ethers";
 import { DirectSigner, CosmosQueryClient } from '@interchainjs/cosmos';
 import { Secp256k1HDWallet } from '@interchainjs/cosmos';
-import { cosmos } from '@interchainjs/cosmos-types';
+import { StargateClient, SigningStargateClient, coins } from "@cosmjs/stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { collection, addDoc, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "../firebase.config";
 
@@ -70,26 +71,16 @@ class FaucetManager {
     const isPrivateKey = mnemonicOrPrivateKey.length === 64 && /^[0-9a-fA-F]+$/.test(mnemonicOrPrivateKey);
 
     if (isPrivateKey) {
-      // Crear wallet desde private key
-      this.wallet = await Secp256k1HDWallet.fromPrivateKey(
+      // Crear wallet desde private key usando DirectSecp256k1HdWallet
+      this.wallet = await DirectSecp256k1HdWallet.fromPrivateKey(
         mnemonicOrPrivateKey,
-        {
-          derivations: [{
-            prefix: this.addressPrefix,
-            hdPath: "m/44'/118'/0'/0/0", // Path estándar para Cosmos
-          }]
-        }
+        this.addressPrefix
       );
     } else {
-      // Crear wallet desde mnemonic
-      this.wallet = await Secp256k1HDWallet.fromMnemonic(
+      // Crear wallet desde mnemonic usando DirectSecp256k1HdWallet
+      this.wallet = await DirectSecp256k1HdWallet.fromMnemonic(
         mnemonicOrPrivateKey,
-        {
-          derivations: [{
-            prefix: this.addressPrefix,
-            hdPath: "m/44'/118'/0'/0/0", // Path estándar para Cosmos
-          }]
-        }
+        { prefix: this.addressPrefix }
       );
     }
 
@@ -227,12 +218,14 @@ class FaucetManager {
   }
 
   async sendCosmosTransaction(address, uuid) {
-    // Para testnet, usar balance simulado
-    const simulatedBalance = 1000000000; // 1000 PASG simulado
-    const requiredAmount = 1000000; // 1 PASG (upasg tiene 6 decimales)
+    // Verificar balance real del faucet
+    const balance = await this.getBalance();
+    const sendAmount = 1000000; // 1 PASG (upasg tiene 6 decimales)
+    const feeAmount = 2500000; // Comisión requerida por Passage
+    const totalRequired = sendAmount + feeAmount; // Total necesario
 
-    if (simulatedBalance < requiredAmount) {
-      throw new Error("Insufficient funds in faucet wallet");
+    if (parseInt(balance.amount) < totalRequired) {
+      throw new Error(`Insufficient funds in faucet wallet. Required: ${totalRequired} upasg, Available: ${balance.amount} upasg`);
     }
 
     // Validar formato de dirección de Cosmos (más flexible)
@@ -243,28 +236,35 @@ class FaucetManager {
       throw new Error(`Invalid ${prefix} address format`);
     }
 
-    // Crear mensaje de transferencia usando cosmos.bank.v1beta1.MsgSend.fromPartial
-    const transferMessage = {
-      typeUrl: '/cosmos.bank.v1beta1.MsgSend',
-      value: cosmos.bank.v1beta1.MsgSend.fromPartial({
-        fromAddress: this.walletAddress, 
-        toAddress: address,
-        amount: [{
-          denom: this.denom,
-          amount: '1000000' // 1 PASG
-        }]
-      })
+    // Crear wallet desde mnemonic usando DirectSecp256k1HdWallet
+    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(
+      this.privateKeyOrMnemonic,
+      { prefix: this.addressPrefix }
+    );
+
+    // Obtener la cuenta del wallet
+    const [account] = await wallet.getAccounts();
+
+    // Conectar cliente firmante
+    const client = await SigningStargateClient.connectWithSigner(this.rpcUrl, wallet);
+
+    // Definir el monto a enviar (1 PASG)
+    const amount = coins(1000000, this.denom); // 1 PASG
+
+    // Definir la comisión (Passage requiere 2,500,000 upasg mínimo)
+    const fee = {
+      amount: coins(2500000, this.denom), // Fee de gas requerido por Passage
+      gas: "200000", // gas limit
     };
 
     // Enviar transacción
-    const result = await this.signer.signAndBroadcast({
-      messages: [transferMessage],
-      fee: {
-        amount: [{ denom: this.denom, amount: '5000' }], // Fee de gas
-        gas: '200000'
-      },
-      memo: `${this.chainId} Testnet Faucet`
-    });
+    const result = await client.sendTokens(
+      account.address,
+      address,
+      amount,
+      fee,
+      `${this.chainId} Testnet Faucet`
+    );
 
     // Guardar transacción en Firebase
     await addDoc(collection(db, "transactions"), {
@@ -317,12 +317,20 @@ class FaucetManager {
           denom: 'ETH'
         };
       } else if (this.blockchainType === 'cosmos') {
-        // Para testnet de Passage, usar balance simulado
+        // Conectar cliente de solo lectura usando el endpoint faucetRPC
+        const client = await StargateClient.connect(this.rpcUrl);
+        
+        // Obtener balance real de Passage usando la dirección del wallet
+        const balance = await client.getBalance(this.walletAddress, this.denom);
+        
+        // Formatear el balance (upasg tiene 6 decimales)
+        const formattedAmount = (parseInt(balance.amount) / 1000000).toFixed(6);
+        
         return {
-          amount: "1000000000", // 1000 PASG en upasg
-          formatted: "1000.0 PASG (testnet)",
+          amount: balance.amount,
+          formatted: `${formattedAmount} PASG`,
           denom: this.denom,
-          simulated: true
+          simulated: false
         };
       }
     } catch (error) {

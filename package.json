@@ -41,8 +41,11 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-app-rewired start",
-    "build": "react-app-rewired build",
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "build-cra": "set NODE_OPTIONS=--max-old-space-size=8192 && react-app-rewired build",
+    "preview": "vite preview",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
@@ -65,8 +68,12 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@vitejs/plugin-react": "^5.0.4",
     "javascript-obfuscator": "^4.0.2",
+    "parcel": "^2.16.0",
     "react-app-rewired": "^2.2.1",
+    "vite": "^7.1.7",
     "webpack-obfuscator": "^3.5.1"
   }
 }

@@ -22,6 +22,7 @@ const FaucetDetail = () => {
   const [balance, setBalance] = useState(null);
   const [validatorInfo, setValidatorInfo] = useState(null);
   const [availableBlockchains, setAvailableBlockchains] = useState([]);
+  const [transactionHash, setTransactionHash] = useState(null);
 
   useEffect(() => {
     const fetchBlockchain = async () => {
@@ -77,23 +78,28 @@ const FaucetDetail = () => {
         console.log("faucetRPC:", blockchain.faucetRPC);
         console.log("faucetLink:", blockchain.faucetLink);
 
+        console.log(
+          "VITE_PASSAGE_FAUCET_MNEMONIC:",
+          import.meta.env.VITE_PASSAGE_FAUCET_MNEMONIC
+        );
+        console.log(
+          "VITE_FAUCET_PRIVATE_KEY:",
+          import.meta.env.VITE_FAUCET_PRIVATE_KEY
+        );
+
         let manager;
         let privateKeyOrMnemonic;
 
         if (blockchain.name === "Passage") {
           // Configuración para Passage - usar RPC de Firebase
-          privateKeyOrMnemonic = process.env.REACT_APP_PASSAGE_FAUCET_MNEMONIC;
+          privateKeyOrMnemonic = import.meta.env.VITE_PASSAGE_FAUCET_MNEMONIC;
           if (!privateKeyOrMnemonic) {
-            console.warn(
-              "REACT_APP_PASSAGE_FAUCET_MNEMONIC no está configurado"
-            );
+            console.warn("the VITE_PASSAGE_FAUCET_MNEMONIC is not configured");
             return;
           }
 
           // Usar faucetRPC de Firebase
-          const passageRpc =
-            blockchain.faucetRPC ||
-            "https://api.resolute.vitwit.com/passage_testrpc/";
+          const passageRpc = blockchain.faucetRPC;
 
           // Usar chain ID de Firebase o fallback
           const passageChainId = blockchain.chainId || "passage-testnet-1";
@@ -106,15 +112,14 @@ const FaucetDetail = () => {
           );
         } else {
           // Configuración para Ethereum/Story Protocol - usar configuración del blockchain
-          privateKeyOrMnemonic = process.env.REACT_APP_FAUCET_PRIVATE_KEY;
+          privateKeyOrMnemonic = import.meta.env.VITE_FAUCET_PRIVATE_KEY;
           if (!privateKeyOrMnemonic) {
-            console.warn("REACT_APP_FAUCET_PRIVATE_KEY no está configurado");
+            console.warn("VITE_FAUCET_PRIVATE_KEY is not configured");
             return;
           }
 
           const chainId = parseInt(blockchain.chainId) || 1516;
-          const ethereumRpc =
-            blockchain.faucetRPC || "https://story-mainnet.us.nodefleet.net";
+          const ethereumRpc = blockchain.faucetRPC;
 
           manager = new FaucetManager(
             "ethereum",
@@ -154,7 +159,7 @@ const FaucetDetail = () => {
         console.error("Error initializing faucet:", error);
         // No mostrar toast de error si es por variables de entorno faltantes
         if (!error.message.includes("Private key or mnemonic is required")) {
-          toast.error("Error inicializando faucet");
+          toast.error("Error initializing faucet");
         }
       }
     };
@@ -194,7 +199,15 @@ const FaucetDetail = () => {
         );
       }
 
-      await faucetManager.sendTransaction(walletAddress, user.uid);
+      const result = await faucetManager.sendTransaction(
+        walletAddress,
+        user.uid
+      );
+
+      // Capturar el hash de la transacción
+      const hash = result.transactionHash || result.hash;
+      setTransactionHash(hash);
+
       toast.success("¡Tokens enviados exitosamente!");
 
       // Actualizar balance
@@ -202,7 +215,7 @@ const FaucetDetail = () => {
       setBalance(newBalance);
     } catch (error) {
       console.error("Faucet error:", error);
-      toast.error(error.message || "Error al enviar tokens");
+      toast.error(error.message || "Error sending tokens");
     } finally {
       setIsProcessing(false);
     }
@@ -251,7 +264,7 @@ const FaucetDetail = () => {
               {/* Selector de blockchain */}
               <div className="mb-4">
                 <label className="block text-gray-400 text-sm mb-2">
-                  Seleccionar Blockchain
+                  Select Blockchain
                 </label>
                 <select
                   value={id}
@@ -267,37 +280,41 @@ const FaucetDetail = () => {
               </div>
 
               {/* Información del validador para Cosmos */}
-              {process.env.NODE_ENV === "development" && validatorInfo && blockchain.name === "Passage" && (
-                <div className="mb-4 p-4 bg-[#3d4954] rounded-lg">
-                  <h4 className="text-lg font-semibold mb-3 text-[#7a65d0]">
-                    Información del Validador
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Dirección:</span>
-                      <span className="text-white">
-                        {validatorInfo.address}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Chain ID:</span>
-                      <span className="text-white">
-                        {validatorInfo.chainId}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">RPC:</span>
-                      <span className="text-white">{validatorInfo.rpcUrl}</span>
+              {import.meta.env.MODE === "development" &&
+                validatorInfo &&
+                blockchain.name === "Passage" && (
+                  <div className="mb-4 p-4 bg-[#3d4954] rounded-lg">
+                    <h4 className="text-lg font-semibold mb-3 text-[#7a65d0]">
+                      Information about the Validator
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Address:</span>
+                        <span className="text-white">
+                          {validatorInfo.address}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Chain ID:</span>
+                        <span className="text-white">
+                          {validatorInfo.chainId}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">RPC:</span>
+                        <span className="text-white">
+                          {validatorInfo.rpcUrl}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Balance del faucet - Solo en modo desarrollo */}
-              {balance && process.env.NODE_ENV === "development" && (
+              {balance && import.meta.env.MODE === "development" && (
                 <div className="mb-4 p-4 bg-[#3d4954] rounded-lg">
                   <h4 className="text-lg font-semibold mb-2 text-[#7a65d0]">
-                    Balance del Faucet (Dev Mode)
+                    Faucet Balance (Dev Mode)
                   </h4>
                   <p className="text-2xl font-bold text-white">
                     {balance.formatted}
@@ -306,15 +323,15 @@ const FaucetDetail = () => {
               )}
 
               {/* Mensaje cuando no hay configuración */}
-              {process.env.NODE_ENV === "development" && !faucetManager && (
+              {import.meta.env.MODE === "development" && !faucetManager && (
                 <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
                   <h4 className="text-lg font-semibold mb-2 text-yellow-400">
-                    ⚠️ Configuración Requerida
+                    ⚠️ Required Configuration
                   </h4>
                   <p className="text-yellow-200 text-sm">
                     {blockchain.name === "Passage"
-                      ? "Para usar el faucet de Passage, configura REACT_APP_PASSAGE_FAUCET_MNEMONIC (mnemonic o private key) en las variables de entorno."
-                      : "Para usar el faucet de Story Protocol, configura REACT_APP_FAUCET_PRIVATE_KEY en las variables de entorno."}
+                      ? "For Passage faucet, configure VITE_PASSAGE_FAUCET_MNEMONIC (mnemonic or private key) in the environment variables."
+                      : "For Story Protocol faucet, configure VITE_FAUCET_PRIVATE_KEY in the environment variables."}
                   </p>
                 </div>
               )}
@@ -345,11 +362,11 @@ const FaucetDetail = () => {
                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#3c7b97] text-white flex items-center justify-center text-xs">
                   2
                 </div>
-                <h3 className="text-lg mb-2">Ingresa tu dirección de wallet</h3>
+                <h3 className="text-lg mb-2">Enter your wallet address</h3>
                 <p className="text-gray-400 text-sm mb-2">
                   {blockchain.name === "Passage"
-                    ? "Dirección de Passage (comienza con pasg1)"
-                    : "Dirección de Story Protocol (comienza con 0x)"}
+                    ? "Passage wallet address (starts with pasg1)"
+                    : "Story Protocol wallet address (starts with 0x)"}
                 </p>
                 <input
                   type="text"
@@ -393,25 +410,59 @@ const FaucetDetail = () => {
                       Procesando...
                     </span>
                   ) : blockchain.name === "Passage" ? (
-                    "Solicitar tokens (1 PASG)"
+                    "Request tokens (1 PASG)" //  Solicitar tokens (1 PASG)
                   ) : (
-                    "Solicitar tokens (1 STORY)"
+                    "Request tokens (1 STORY)"
                   )}
                 </button>
               </div>
 
-              {/* Paso 4 - Share */}
+              {/* Paso 4 - Transaction Hash */}
               <div className="border-l-2 border-[#3c7b97] pl-4 relative">
                 <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#3c7b97] text-white flex items-center justify-center text-xs">
                   4
                 </div>
-                <h3 className="text-lg mb-2">Share a tweet about us</h3>
-                <p className="text-gray-400 text-sm mb-4">
-                  Help us to get rid of the web3 scam
-                </p>
-                <button className="flex items-center gap-2 bg-[#1DA1F2] px-4 py-2 rounded-lg hover:bg-[#1a8cd8] transition-colors">
-                  Share <i className="fab fa-twitter"></i>
-                </button>
+                {transactionHash ? (
+                  <>
+                    <h3 className="text-lg mb-2 text-green-400">
+                      Transaction Completed!
+                    </h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Your transaction has been processed successfully
+                    </p>
+                    <div className="bg-[#1a1a2e] p-4 rounded-lg mb-4">
+                      <p className="text-sm text-gray-400 mb-2">
+                        Transaction Hash:
+                      </p>
+                      <p className="text-white font-mono text-sm break-all bg-[#0f0f1e] p-2 rounded">
+                        {transactionHash}
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() =>
+                          navigator.clipboard.writeText(transactionHash)
+                        }
+                        className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#6b5bb8] transition-colors"
+                      >
+                        <i className="fas fa-copy"></i> Copiar Hash
+                      </button>
+                      <button className="flex items-center gap-2 bg-[#1DA1F2] px-4 py-2 rounded-lg hover:bg-[#1a8cd8] transition-colors">
+                        Share <i className="fab fa-twitter"></i>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg mb-2">Share a tweet about us</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Help us to get rid of the web3 scam
+                    </p>
+                    <button className="flex items-center gap-2 bg-[#1DA1F2] px-4 py-2 rounded-lg hover:bg-[#1a8cd8] transition-colors">
+                      Share <i className="fab fa-twitter"></i>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

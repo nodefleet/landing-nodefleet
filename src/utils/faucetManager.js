@@ -21,7 +21,7 @@ class FaucetManager {
 
   async initialize() {
     if (this.initialized) return;
-    
+
     try {
       if (this.blockchainType === 'ethereum') {
         await this.initializeEthereum(this.privateKeyOrMnemonic);
@@ -89,7 +89,7 @@ class FaucetManager {
     console.log("- this.wallet:", this.wallet);
     console.log("- this.wallet.address:", this.wallet.address);
     console.log("- this.wallet.accounts:", this.wallet.accounts);
-    
+
     // Obtener la dirección del wallet
     try {
       const accounts = await this.wallet.getAccounts();
@@ -220,7 +220,7 @@ class FaucetManager {
   async sendCosmosTransaction(address, uuid) {
     // Verificar balance real del faucet
     const balance = await this.getBalance();
-    const sendAmount = 1000000; // 1 PASG (upasg tiene 6 decimales)
+    const sendAmount = 10000000000; // 10,000 PASG (upasg tiene 6 decimales)
     const feeAmount = 2500000; // Comisión requerida por Passage
     const totalRequired = sendAmount + feeAmount; // Total necesario
 
@@ -231,7 +231,7 @@ class FaucetManager {
     // Validar formato de dirección de Cosmos (más flexible)
     const prefix = this.addressPrefix || 'pasg';
     const isValidAddress = (address.startsWith(prefix + '1') || address.startsWith('u' + prefix + '1')) && address.length >= 40 && address.length <= 50;
-    
+
     if (!isValidAddress) {
       throw new Error(`Invalid ${prefix} address format`);
     }
@@ -319,13 +319,13 @@ class FaucetManager {
       } else if (this.blockchainType === 'cosmos') {
         // Conectar cliente de solo lectura usando el endpoint faucetRPC
         const client = await StargateClient.connect(this.rpcUrl);
-        
+
         // Obtener balance real de Passage usando la dirección del wallet
         const balance = await client.getBalance(this.walletAddress, this.denom);
-        
+
         // Formatear el balance (upasg tiene 6 decimales)
         const formattedAmount = (parseInt(balance.amount) / 1000000).toFixed(6);
-        
+
         return {
           amount: balance.amount,
           formatted: `${formattedAmount} PASG`,
@@ -366,7 +366,7 @@ class FaucetManager {
     console.log("Validando dirección:", address);
     console.log("blockchainType:", this.blockchainType);
     console.log("addressPrefix:", this.addressPrefix);
-    
+
     if (this.blockchainType === 'ethereum') {
       return ethers.utils.isAddress(address);
     } else if (this.blockchainType === 'cosmos') {

@@ -23,6 +23,7 @@ const FaucetDetail = () => {
   const [validatorInfo, setValidatorInfo] = useState(null);
   const [availableBlockchains, setAvailableBlockchains] = useState([]);
   const [transactionHash, setTransactionHash] = useState(null);
+  const [isChangingBlockchain, setIsChangingBlockchain] = useState(false);
 
   useEffect(() => {
     const fetchBlockchain = async () => {
@@ -35,9 +36,11 @@ const FaucetDetail = () => {
           setBlockchain({ id: docSnap.id, ...data });
         }
         setLoading(false);
+        setIsChangingBlockchain(false); // Resetear estado de cambio
       } catch (error) {
         console.error("Error fetching blockchain:", error);
         setLoading(false);
+        setIsChangingBlockchain(false);
       }
     };
 
@@ -167,9 +170,24 @@ const FaucetDetail = () => {
     initializeFaucet();
   }, [blockchain]);
 
-  const handleBlockchainChange = (blockchainId) => {
+  const handleBlockchainChange = async (blockchainId) => {
     if (blockchainId !== id) {
-      navigate(`/faucets/${blockchainId}`);
+      setIsChangingBlockchain(true);
+      
+      // Limpiar estados antes del cambio
+      setTransactionHash(null);
+      setWalletAddress("");
+      setIsConnected(false);
+      setUser(null);
+      setFaucetManager(null);
+      setBalance(null);
+      setValidatorInfo(null);
+      
+      // Pequeña pausa para mostrar el estado de carga
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Navegar sin forzar refresco
+      navigate(`/faucets/${blockchainId}`, { replace: true });
     }
   };
 
@@ -265,11 +283,19 @@ const FaucetDetail = () => {
               <div className="mb-4">
                 <label className="block text-gray-400 text-sm mb-2">
                   Select Blockchain
+                  {isChangingBlockchain && (
+                    <span className="ml-2 text-[#7a65d0]">
+                      <i className="fas fa-spinner animate-spin"></i> Cambiando...
+                    </span>
+                  )}
                 </label>
                 <select
                   value={id}
                   onChange={(e) => handleBlockchainChange(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-[#3d4954] text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7a65d0]"
+                  disabled={isChangingBlockchain}
+                  className={`px-4 py-2 rounded-lg bg-[#3d4954] text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7a65d0] ${
+                    isChangingBlockchain ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {availableBlockchains.map((bc) => (
                     <option key={bc.id} value={bc.id}>
@@ -447,8 +473,19 @@ const FaucetDetail = () => {
                       >
                         <i className="fas fa-copy"></i> Copiar Hash
                       </button>
-                      <button className="flex items-center gap-2 bg-[#1DA1F2] px-4 py-2 rounded-lg hover:bg-[#1a8cd8] transition-colors">
-                        Share <i className="fab fa-twitter"></i>
+                      <button
+                        onClick={() => {
+                          if (blockchain.xLink) {
+                            window.open(blockchain.xLink, "_blank");
+                          } else {
+                            toast.error(
+                              "X link not configured for this blockchain"
+                            );
+                          }
+                        }}
+                        className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
+                      >
+                        Share <i className="fab fa-x-twitter"></i>
                       </button>
                     </div>
                   </>
@@ -458,8 +495,19 @@ const FaucetDetail = () => {
                     <p className="text-gray-400 text-sm mb-4">
                       Help us to get rid of the web3 scam
                     </p>
-                    <button className="flex items-center gap-2 bg-[#1DA1F2] px-4 py-2 rounded-lg hover:bg-[#1a8cd8] transition-colors">
-                      Share <i className="fab fa-twitter"></i>
+                    <button
+                      onClick={() => {
+                        if (blockchain.xLink) {
+                          window.open(blockchain.xLink, "_blank");
+                        } else {
+                          toast.error(
+                            "X link not configured for this blockchain"
+                          );
+                        }
+                      }}
+                      className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
+                    >
+                      Share <i className="fab fa-x-twitter"></i>
                     </button>
                   </>
                 )}

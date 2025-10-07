@@ -30,6 +30,7 @@ const Admin = () => {
         nodeType: data.nodeType,
         rpcLinks: rpcLinksArray,
         faucetLink: data.faucetLink || null,
+        xLink: data.xLink || null,
       };
 
       await addDoc(collection(db, "blockchains"), blockchainData);
@@ -141,6 +142,17 @@ const Admin = () => {
               {...register("faucetLink")}
               className="w-full p-3 rounded-lg bg-morado4 text-black border border-morado5 focus:outline-none focus:border-purple-500"
               placeholder="https://faucet-url"
+            />
+          </div>
+
+          <div>
+            <label className="block text-white mb-2">
+              X (Twitter) Link (optional)
+            </label>
+            <input
+              {...register("xLink")}
+              className="w-full p-3 rounded-lg bg-morado4 text-black border border-morado5 focus:outline-none focus:border-purple-500"
+              placeholder="https://x.com/your-account"
             />
           </div>
 

@@ -7,7 +7,9 @@ const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = import.meta.env.VITE_DISCORD_CLIENT_SECRET;
 const DISCORD_GUILD_ID = import.meta.env.VITE_DISCORD_GUILD_ID;
 const DISCORD_ROLE_ID = import.meta.env.VITE_DISCORD_ROLE_ID;
-const DISCORD_REDIRECT_URI = window.location.origin + window.location.pathname;
+// Usar una URI de redirección fija basada en el origin (sin pathname)
+// Esto debe coincidir exactamente con la configurada en Discord Developer Portal
+const DISCORD_REDIRECT_URI = import.meta.env.VITE_DISCORD_REDIRECT_URI || window.location.origin;
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
 /**
@@ -21,7 +23,7 @@ export const getDiscordAuthUrl = () => {
     response_type: 'code',
     scope: scopes.join(' '),
   });
-  
+
   return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
 };
 
@@ -48,13 +50,14 @@ export const exchangeCodeForToken = async (code) => {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error_description || 'Error al intercambiar código por token');
+      console.error('❌ Token exchange error:', error);
+      throw new Error(error.error_description || 'Error exchanging code for token');
     }
 
     const data = await response.json();
     return data.access_token;
   } catch (error) {
-    console.error('Error intercambiando código por token:', error);
+    console.error('❌ Error intercambiando código por token:', error);
     throw error;
   }
 };
@@ -71,7 +74,7 @@ export const getDiscordUser = async (accessToken) => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener información del usuario');
+      throw new Error('Error obtaining user information');
     }
 
     return await response.json();
@@ -95,14 +98,19 @@ export const verifyGuildMembership = async (accessToken, userId) => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener servidores del usuario');
+      if (response.status === 401) {
+        throw new Error('Invalid or expired access token');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later');
+      }
+      throw new Error('Error obtaining user servers');
     }
 
     const guilds = await response.json();
-    
+
     // Buscar el servidor específico en la lista
     const guild = guilds.find(g => g.id === DISCORD_GUILD_ID);
-    
+
     if (!guild) {
       return null; // Usuario no es miembro del servidor
     }
@@ -123,7 +131,7 @@ export const verifyGuildMembership = async (accessToken, userId) => {
       if (memberResponse.ok) {
         return await memberResponse.json();
       }
-      
+
       // Si el endpoint falla, retornamos la información básica del guild
       return { id: guild.id, roles: [] };
     } catch (e) {
@@ -144,7 +152,7 @@ export const verifyUserRole = async (accessToken, userId) => {
   try {
     // Primero obtenemos la información del miembro en el servidor
     const memberInfo = await verifyGuildMembership(accessToken, userId);
-    
+
     if (!memberInfo) {
       return false;
     }
@@ -160,35 +168,52 @@ export const verifyUserRole = async (accessToken, userId) => {
 
 /**
  * Autentica al usuario con Discord y valida membresía y rol
+ * @param {string} code - Código de autorización
+ * @param {string} redirectUri - URI de redirección usada (opcional)
  * @returns {Promise<{user: Object, isValid: boolean, error?: string}>}
  */
-export const authenticateAndValidateDiscord = async (code) => {
+export const authenticateAndValidateDiscord = async (code, redirectUri = null) => {
   try {
+    // Determinar el redirect_uri si no se proporciona
+    let finalRedirectUri = redirectUri;
+    if (!finalRedirectUri && typeof window !== 'undefined') {
+      // Usar la ruta completa con hash si está disponible
+      if (window.location.hash) {
+        const hashPath = window.location.hash.split('?')[0];
+        finalRedirectUri = window.location.origin + hashPath;
+      } else {
+        finalRedirectUri = DISCORD_REDIRECT_URI;
+      }
+    }
+    if (!finalRedirectUri) {
+      finalRedirectUri = DISCORD_REDIRECT_URI;
+    }
+
     // 1. Intercambiar código por token
-    const accessToken = await exchangeCodeForToken(code);
-    
+    const accessToken = await exchangeCodeForToken(code, finalRedirectUri);
+
     // 2. Obtener información del usuario
     const user = await getDiscordUser(accessToken);
-    
+
     // 3. Verificar membresía del servidor
     const isGuildMember = await verifyGuildMembership(accessToken, user.id);
-    
+
     if (!isGuildMember) {
       return {
         user: null,
         isValid: false,
-        error: 'No eres miembro del servidor requerido',
+        error: 'You are not a member of the required server',
       };
     }
 
     // 4. Verificar rol
     const hasRole = await verifyUserRole(accessToken, user.id);
-    
+
     if (!hasRole) {
       return {
         user: null,
         isValid: false,
-        error: 'No tienes el rol "faucet" requerido',
+        error: 'You do not have the required "faucet" role',
       };
     }
 
@@ -204,7 +229,7 @@ export const authenticateAndValidateDiscord = async (code) => {
     return {
       user: null,
       isValid: false,
-      error: error.message || 'Error al autenticar con Discord',
+      error: error.message || 'Error authenticating with Discord',
     };
   }
 };

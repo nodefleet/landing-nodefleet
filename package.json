@@ -69,11 +69,11 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^4.2.1",
     "javascript-obfuscator": "^4.0.2",
     "parcel": "^2.16.0",
     "react-app-rewired": "^2.2.1",
-    "vite": "^7.1.7",
+    "vite": "^5.2.8",
     "webpack-obfuscator": "^3.5.1"
   }
 }

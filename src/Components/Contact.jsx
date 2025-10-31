@@ -77,7 +77,6 @@ const Contact = (props) => {
         "https://staging.api.appbot.do/send-email/",
         emailData
       );
-      console.log("Correo enviado:", response.data);
       toast.success("Successfully send email!");
       reset();
     } catch (error) {

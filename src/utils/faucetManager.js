@@ -84,19 +84,11 @@ class FaucetManager {
       );
     }
 
-    // Debug: verificar el wallet creado
-    console.log("Wallet creado:");
-    console.log("- this.wallet:", this.wallet);
-    console.log("- this.wallet.address:", this.wallet.address);
-    console.log("- this.wallet.accounts:", this.wallet.accounts);
-
     // Obtener la dirección del wallet
     try {
       const accounts = await this.wallet.getAccounts();
-      console.log("Accounts obtenidas:", accounts);
       if (accounts && accounts.length > 0) {
         this.walletAddress = accounts[0].address;
-        console.log("Dirección del wallet:", this.walletAddress);
       }
     } catch (error) {
       console.error("Error obteniendo accounts del wallet:", error);
@@ -107,11 +99,6 @@ class FaucetManager {
       rpcEndpoint: this.rpcUrl,
       chainId: this.chainId
     });
-
-    // Debug: verificar el queryClient
-    console.log("QueryClient creado:");
-    console.log("- this.queryClient:", this.queryClient);
-    console.log("- this.queryClient.bank:", this.queryClient.bank);
 
     // Crear signer con queryClient
     this.signer = new DirectSigner(this.wallet, {
@@ -124,17 +111,6 @@ class FaucetManager {
     if (typeof this.signer.initialize === 'function') {
       await this.signer.initialize();
     }
-
-    // Debug: verificar el signer después de la inicialización
-    console.log("Signer después de inicialización:");
-    console.log("- this.signer.encoders:", this.signer.encoders);
-    console.log("- this.signer.address:", this.signer.address);
-
-    // Debug: verificar que el signer se creó correctamente
-    console.log("DirectSigner creado:");
-    console.log("- this.signer:", this.signer);
-    console.log("- this.signer.queryClient:", this.signer.queryClient);
-    console.log("- this.signer.address:", this.signer.address);
   }
 
   async sendTransaction(address, uuid) {
@@ -363,10 +339,6 @@ class FaucetManager {
   }
 
   validateAddress(address) {
-    console.log("Validando dirección:", address);
-    console.log("blockchainType:", this.blockchainType);
-    console.log("addressPrefix:", this.addressPrefix);
-
     if (this.blockchainType === 'ethereum') {
       return ethers.utils.isAddress(address);
     } else if (this.blockchainType === 'cosmos') {
@@ -374,7 +346,6 @@ class FaucetManager {
       const prefix = this.addressPrefix || 'pasg';
       // Aceptar tanto 'pasg1' como 'upasg1'
       const isValid = (address.startsWith(prefix + '1') || address.startsWith('u' + prefix + '1')) && address.length >= 40 && address.length <= 50;
-      console.log("Validación Cosmos:", isValid);
       return isValid;
     }
     return false;

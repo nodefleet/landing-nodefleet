@@ -30,6 +30,8 @@ const FaucetDetail = () => {
   const [isChangingBlockchain, setIsChangingBlockchain] = useState(false);
   const [discordConnected, setDiscordConnected] = useState(false);
   const [discordUser, setDiscordUser] = useState(null);
+  const [discordError, setDiscordError] = useState(null);
+  const [processingCode, setProcessingCode] = useState(null);
 
   useEffect(() => {
     const fetchBlockchain = async () => {
@@ -81,21 +83,6 @@ const FaucetDetail = () => {
       setValidatorInfo(null);
 
       try {
-        // Debug: mostrar todos los campos del blockchain
-        console.log("Blockchain data:", blockchain);
-        console.log("Available fields:", Object.keys(blockchain));
-        console.log("faucetRPC:", blockchain.faucetRPC);
-        console.log("faucetLink:", blockchain.faucetLink);
-
-        console.log(
-          "VITE_PASSAGE_FAUCET_MNEMONIC:",
-          import.meta.env.VITE_PASSAGE_FAUCET_MNEMONIC
-        );
-        console.log(
-          "VITE_FAUCET_PRIVATE_KEY:",
-          import.meta.env.VITE_FAUCET_PRIVATE_KEY
-        );
-
         let manager;
         let privateKeyOrMnemonic;
 
@@ -139,7 +126,6 @@ const FaucetDetail = () => {
         }
 
         // Inicializar el manager
-        console.log(`Inicializando faucet manager para: ${blockchain.name}`);
         await manager.initialize();
 
         try {
@@ -176,50 +162,144 @@ const FaucetDetail = () => {
     initializeFaucet();
   }, [blockchain]);
 
+  // Cargar estado de Discord desde localStorage al montar
+  useEffect(() => {
+    if (id !== "7kHOvCFdBvrTy5UXmJRH") return;
+
+    const savedDiscordData = localStorage.getItem("discord_auth_data");
+    if (savedDiscordData) {
+      try {
+        const parsed = JSON.parse(savedDiscordData);
+        setDiscordUser(parsed.user);
+        setDiscordConnected(true);
+        setIsConnected(true);
+        setDiscordError(null); // Clear any previous error
+      } catch (error) {
+        console.error("Error parsing saved Discord data:", error);
+        localStorage.removeItem("discord_auth_data");
+        setDiscordError(null); // Clear error on invalid data
+      }
+    }
+  }, [id]);
+
   // Manejar callback de Discord OAuth
   useEffect(() => {
     if (id !== "7kHOvCFdBvrTy5UXmJRH") return;
 
-    const urlParams = new URLSearchParams(window.location.search);
+    // Con HashRouter, el query string puede estar en el hash o en search
+    // Intentar obtener el código de ambos lugares
+    let hashQuery = "";
+    if (window.location.hash && window.location.hash.includes("?")) {
+      // Si el hash contiene el query string (ej: #/faucets/7kHOvCFdBvrTy5UXmJRH?code=...)
+      const hashParts = window.location.hash.split("?");
+      if (hashParts.length > 1) {
+        hashQuery = hashParts[1];
+      }
+    }
+
+    // Usar el query string del hash si existe, de lo contrario usar window.location.search
+    const queryString = hashQuery || window.location.search.replace("?", "");
+    const urlParams = new URLSearchParams(queryString);
     const code = urlParams.get("code");
-    
-    // Si hay un código y aún no estamos conectados a Discord, procesarlo
-    if (code && !discordConnected) {
+    const error = urlParams.get("error");
+    const errorDescription = urlParams.get("error_description");
+
+    // Si hay un error en la URL, mostrarlo
+    if (error) {
+      console.error("❌ Discord OAuth error:", error, errorDescription);
+      toast.error(`Discord OAuth error: ${errorDescription || error}`);
+      return;
+    }
+
+    // Si hay un código, procesarlo (NO LIMPIAR LA URL)
+    // Prevenir procesar el mismo código dos veces
+    if (code && !discordConnected && processingCode !== code) {
+      setProcessingCode(code); // Marcar que estamos procesando este código
       const processCallback = async () => {
         try {
-          // Limpiar el código de la URL
-          const newUrl = window.location.href.split("?")[0];
-          window.history.replaceState({}, document.title, newUrl);
+          // Capturar el redirect_uri (sin query string del hash)
+          const currentHash = window.location.hash || "";
+          let redirectUri = null;
+
+          if (currentHash) {
+            const hashPath = currentHash.split("?")[0];
+            redirectUri = window.location.origin + hashPath;
+          } else {
+            redirectUri = window.location.origin + window.location.pathname;
+          }
 
           toast.loading("Validating Discord connection...");
 
-          // Validar Discord
-          const result = await authenticateAndValidateDiscord(code);
+          // Validar Discord pasando el redirect_uri
+          const result = await authenticateAndValidateDiscord(
+            code,
+            redirectUri
+          );
 
           if (result.isValid) {
+            // Guardar en localStorage para persistencia
+            localStorage.setItem(
+              "discord_auth_data",
+              JSON.stringify({
+                user: result.user,
+                timestamp: Date.now(),
+              })
+            );
+
             setDiscordUser(result.user);
             setDiscordConnected(true);
             setIsConnected(true);
+            setDiscordError(null); // Clear error on success
+            setProcessingCode(null); // Clear processing flag
             toast.dismiss();
             toast.success("Successfully connected with Discord!");
           } else {
+            console.error("❌ Discord validation failed:", result.error);
             toast.dismiss();
-            toast.error(result.error || "Failed to validate Discord");
+
+            // Set error message based on error type
+            let errorMessage = result.error || "Failed to validate Discord";
+            if (
+              result.error?.toLowerCase().includes("server") ||
+              result.error?.toLowerCase().includes("guild")
+            ) {
+              errorMessage =
+                "You are not a member of the required Discord server";
+            } else if (result.error?.toLowerCase().includes("role")) {
+              errorMessage =
+                "You don't have the required role in the Discord server";
+            } else if (
+              result.error?.toLowerCase().includes("code") ||
+              result.error?.toLowerCase().includes("invalid")
+            ) {
+              errorMessage =
+                "Invalid authorization code. Please try connecting again.";
+            }
+
+            setDiscordError(errorMessage);
+            setProcessingCode(null); // Clear processing flag on error
+            // Limpiar localStorage en caso de error
+            localStorage.removeItem("discord_auth_data");
           }
         } catch (error) {
-          console.error("Discord callback error:", error);
+          console.error("❌ Discord callback error:", error);
           toast.dismiss();
-          toast.error("Error validating Discord connection");
+          const errorMessage =
+            error.message || "Unknown error occurred while validating Discord";
+          setDiscordError(errorMessage);
+          setProcessingCode(null); // Clear processing flag on error
+          // Limpiar localStorage en caso de error
+          localStorage.removeItem("discord_auth_data");
         }
       };
       processCallback();
     }
-  }, [id, discordConnected]);
+  }, [id]);
 
   const handleBlockchainChange = async (blockchainId) => {
     if (blockchainId !== id) {
       setIsChangingBlockchain(true);
-      
+
       // Limpiar estados antes del cambio
       setTransactionHash(null);
       setWalletAddress("");
@@ -227,13 +307,18 @@ const FaucetDetail = () => {
       setUser(null);
       setDiscordConnected(false);
       setDiscordUser(null);
+      setDiscordError(null);
+      setProcessingCode(null);
       setFaucetManager(null);
       setBalance(null);
       setValidatorInfo(null);
-      
+
+      // Limpiar localStorage de Discord
+      localStorage.removeItem("discord_auth_data");
+
       // Pequeña pausa para mostrar el estado de carga
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // Navegar sin forzar refresco
       navigate(`/faucets/${blockchainId}`, { replace: true });
     }
@@ -260,19 +345,25 @@ const FaucetDetail = () => {
         return;
       }
 
+      // Clear any previous error when trying to connect again
+      setDiscordError(null);
+
       // Redirigir a Discord OAuth
       const authUrl = getDiscordAuthUrl();
       window.location.href = authUrl;
     } catch (error) {
       console.error("Discord auth error:", error);
+      setDiscordError("Failed to connect with Discord. Please try again.");
       toast.error("Failed to connect with Discord");
     }
   };
 
   const handleRequestTokens = async () => {
     // Permitir con GitHub o Discord (solo para Passage)
-    const isUserConnected = user || (id === "7kHOvCFdBvrTy5UXmJRH" && discordUser);
-    if (!isUserConnected || !walletAddress || isProcessing || !faucetManager) return;
+    const isUserConnected =
+      user || (id === "7kHOvCFdBvrTy5UXmJRH" && discordUser);
+    if (!isUserConnected || !walletAddress || isProcessing || !faucetManager)
+      return;
 
     setIsProcessing(true);
     try {
@@ -286,10 +377,7 @@ const FaucetDetail = () => {
 
       // Usar uid de GitHub o id de Discord
       const userId = user?.uid || discordUser?.id || "unknown";
-      const result = await faucetManager.sendTransaction(
-        walletAddress,
-        userId
-      );
+      const result = await faucetManager.sendTransaction(walletAddress, userId);
 
       // Capturar el hash de la transacción
       const hash = result.transactionHash || result.hash;
@@ -354,7 +442,8 @@ const FaucetDetail = () => {
                   Select Blockchain
                   {isChangingBlockchain && (
                     <span className="ml-2 text-[#7a65d0]">
-                      <i className="fas fa-spinner animate-spin"></i> Cambiando...
+                      <i className="fas fa-spinner animate-spin"></i>{" "}
+                      Changing...
                     </span>
                   )}
                 </label>
@@ -363,7 +452,7 @@ const FaucetDetail = () => {
                   onChange={(e) => handleBlockchainChange(e.target.value)}
                   disabled={isChangingBlockchain}
                   className={`px-4 py-2 rounded-lg bg-[#3d4954] text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#7a65d0] ${
-                    isChangingBlockchain ? 'opacity-50 cursor-not-allowed' : ''
+                    isChangingBlockchain ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {availableBlockchains.map((bc) => (
@@ -444,24 +533,29 @@ const FaucetDetail = () => {
                     ? "Connect to your Github or Discord and validate your identity"
                     : "Connect to your Github and validate your identity"}
                 </p>
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={handleGithubLogin}
-                    disabled={isConnected}
-                    className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-                  >
-                    {isConnected && user ? "Connected" : "Connect"}{" "}
-                    <i className="fab fa-github"></i>
-                  </button>
-                  {id === "7kHOvCFdBvrTy5UXmJRH" && (
+                <div className="flex justify-center flex-col">
+                  <div className="flex gap-2 flex-wrap">
                     <button
-                      onClick={handleDiscordLogin}
+                      onClick={handleGithubLogin}
                       disabled={isConnected}
-                      className="flex items-center gap-2 bg-[#5865F2] px-4 py-2 rounded-lg hover:bg-[#4752C4] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
-                      {discordConnected ? "Connected" : "Connect"}{" "}
-                      <i className="fab fa-discord"></i>
+                      {isConnected && user ? "Connected" : "Connect"}{" "}
+                      <i className="fab fa-github"></i>
                     </button>
+                    {id === "7kHOvCFdBvrTy5UXmJRH" && (
+                      <button
+                        onClick={handleDiscordLogin}
+                        disabled={discordConnected}
+                        className="flex items-center gap-2 bg-[#5865F2] px-4 py-2 rounded-lg hover:bg-[#4752C4] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      >
+                        {discordConnected ? "Connected" : "Connect"}{" "}
+                        <i className="fab fa-discord"></i>
+                      </button>
+                    )}
+                  </div>
+                  {discordError && (
+                    <p className="text-red-400 text-sm mt-1">{discordError}</p>
                   )}
                 </div>
               </div>
@@ -516,7 +610,7 @@ const FaucetDetail = () => {
                   {isProcessing ? (
                     <span className="flex items-center gap-2">
                       <i className="fas fa-spinner animate-spin"></i>{" "}
-                      Procesando...
+                      Processing...
                     </span>
                   ) : blockchain.name === "Passage" ? (
                     "Request tokens (1 PASG)" //  Solicitar tokens (1 PASG)
@@ -554,7 +648,7 @@ const FaucetDetail = () => {
                         }
                         className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#6b5bb8] transition-colors"
                       >
-                        <i className="fas fa-copy"></i> Copiar Hash
+                        <i className="fas fa-copy"></i> Copy Hash
                       </button>
                       <button
                         onClick={() => {

@@ -530,32 +530,39 @@ const FaucetDetail = () => {
                 <h3 className="text-lg mb-2">Verify your user</h3>
                 <p className="text-gray-400 text-sm mb-4">
                   {id === "7kHOvCFdBvrTy5UXmJRH"
-                    ? "Connect to your Github or Discord and validate your identity"
+                    ? "Connect to your Discord and validate your identity"
                     : "Connect to your Github and validate your identity"}
                 </p>
                 <div className="flex justify-center flex-col">
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={handleGithubLogin}
-                      disabled={isConnected}
-                      className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-                    >
-                      {isConnected && user ? "Connected" : "Connect"}{" "}
-                      <i className="fab fa-github"></i>
-                    </button>
-                    {id === "7kHOvCFdBvrTy5UXmJRH" && (
+                  {id === "7kHOvCFdBvrTy5UXmJRH" ? (
+                    <>
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={handleDiscordLogin}
+                          disabled={discordConnected}
+                          className="flex items-center gap-2 bg-[#5865F2] px-4 py-2 rounded-lg hover:bg-[#4752C4] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        >
+                          {discordConnected ? "Connected" : "Connect"}{" "}
+                          <i className="fab fa-discord"></i>
+                        </button>
+                      </div>
+                      {discordError && (
+                        <p className="text-red-400 text-sm mt-1">
+                          {discordError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div>
                       <button
-                        onClick={handleDiscordLogin}
-                        disabled={discordConnected}
-                        className="flex items-center gap-2 bg-[#5865F2] px-4 py-2 rounded-lg hover:bg-[#4752C4] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        onClick={handleGithubLogin}
+                        disabled={isConnected}
+                        className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
                       >
-                        {discordConnected ? "Connected" : "Connect"}{" "}
-                        <i className="fab fa-discord"></i>
+                        {isConnected && user ? "Connected" : "Connect"}{" "}
+                        <i className="fab fa-github"></i>
                       </button>
-                    )}
-                  </div>
-                  {discordError && (
-                    <p className="text-red-400 text-sm mt-1">{discordError}</p>
+                    </div>
                   )}
                 </div>
               </div>

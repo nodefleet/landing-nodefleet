@@ -8,6 +8,10 @@ import { signInWithPopup, GithubAuthProvider } from "firebase/auth";
 import { auth } from "../firebase.config";
 import FaucetManager from "../utils/faucetManager";
 import toast from "react-hot-toast";
+import {
+  getDiscordAuthUrl,
+  authenticateAndValidateDiscord,
+} from "../utils/discordAuth";
 
 const FaucetDetail = () => {
   const { id } = useParams();
@@ -24,6 +28,8 @@ const FaucetDetail = () => {
   const [availableBlockchains, setAvailableBlockchains] = useState([]);
   const [transactionHash, setTransactionHash] = useState(null);
   const [isChangingBlockchain, setIsChangingBlockchain] = useState(false);
+  const [discordConnected, setDiscordConnected] = useState(false);
+  const [discordUser, setDiscordUser] = useState(null);
 
   useEffect(() => {
     const fetchBlockchain = async () => {
@@ -170,6 +176,46 @@ const FaucetDetail = () => {
     initializeFaucet();
   }, [blockchain]);
 
+  // Manejar callback de Discord OAuth
+  useEffect(() => {
+    if (id !== "7kHOvCFdBvrTy5UXmJRH") return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    
+    // Si hay un código y aún no estamos conectados a Discord, procesarlo
+    if (code && !discordConnected) {
+      const processCallback = async () => {
+        try {
+          // Limpiar el código de la URL
+          const newUrl = window.location.href.split("?")[0];
+          window.history.replaceState({}, document.title, newUrl);
+
+          toast.loading("Validating Discord connection...");
+
+          // Validar Discord
+          const result = await authenticateAndValidateDiscord(code);
+
+          if (result.isValid) {
+            setDiscordUser(result.user);
+            setDiscordConnected(true);
+            setIsConnected(true);
+            toast.dismiss();
+            toast.success("Successfully connected with Discord!");
+          } else {
+            toast.dismiss();
+            toast.error(result.error || "Failed to validate Discord");
+          }
+        } catch (error) {
+          console.error("Discord callback error:", error);
+          toast.dismiss();
+          toast.error("Error validating Discord connection");
+        }
+      };
+      processCallback();
+    }
+  }, [id, discordConnected]);
+
   const handleBlockchainChange = async (blockchainId) => {
     if (blockchainId !== id) {
       setIsChangingBlockchain(true);
@@ -179,6 +225,8 @@ const FaucetDetail = () => {
       setWalletAddress("");
       setIsConnected(false);
       setUser(null);
+      setDiscordConnected(false);
+      setDiscordUser(null);
       setFaucetManager(null);
       setBalance(null);
       setValidatorInfo(null);
@@ -204,8 +252,27 @@ const FaucetDetail = () => {
     }
   };
 
+  const handleDiscordLogin = async () => {
+    try {
+      // Solo disponible para el faucet de Passage
+      if (id !== "7kHOvCFdBvrTy5UXmJRH") {
+        toast.error("Discord validation is only available for Passage faucet");
+        return;
+      }
+
+      // Redirigir a Discord OAuth
+      const authUrl = getDiscordAuthUrl();
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Discord auth error:", error);
+      toast.error("Failed to connect with Discord");
+    }
+  };
+
   const handleRequestTokens = async () => {
-    if (!user || !walletAddress || isProcessing || !faucetManager) return;
+    // Permitir con GitHub o Discord (solo para Passage)
+    const isUserConnected = user || (id === "7kHOvCFdBvrTy5UXmJRH" && discordUser);
+    if (!isUserConnected || !walletAddress || isProcessing || !faucetManager) return;
 
     setIsProcessing(true);
     try {
@@ -217,9 +284,11 @@ const FaucetDetail = () => {
         );
       }
 
+      // Usar uid de GitHub o id de Discord
+      const userId = user?.uid || discordUser?.id || "unknown";
       const result = await faucetManager.sendTransaction(
         walletAddress,
-        user.uid
+        userId
       );
 
       // Capturar el hash de la transacción
@@ -371,16 +440,30 @@ const FaucetDetail = () => {
                 </div>
                 <h3 className="text-lg mb-2">Verify your user</h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Connect to your Github and validate your identity
+                  {id === "7kHOvCFdBvrTy5UXmJRH"
+                    ? "Connect to your Github or Discord and validate your identity"
+                    : "Connect to your Github and validate your identity"}
                 </p>
-                <button
-                  onClick={handleGithubLogin}
-                  disabled={isConnected}
-                  className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  {isConnected ? "Connected" : "Connect"}{" "}
-                  <i className="fab fa-github"></i>
-                </button>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={handleGithubLogin}
+                    disabled={isConnected}
+                    className="flex items-center gap-2 bg-[#7a65d0] px-4 py-2 rounded-lg hover:bg-[#5538ce] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  >
+                    {isConnected && user ? "Connected" : "Connect"}{" "}
+                    <i className="fab fa-github"></i>
+                  </button>
+                  {id === "7kHOvCFdBvrTy5UXmJRH" && (
+                    <button
+                      onClick={handleDiscordLogin}
+                      disabled={isConnected}
+                      className="flex items-center gap-2 bg-[#5865F2] px-4 py-2 rounded-lg hover:bg-[#4752C4] transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                      {discordConnected ? "Connected" : "Connect"}{" "}
+                      <i className="fab fa-discord"></i>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Paso 2 - Wallet */}

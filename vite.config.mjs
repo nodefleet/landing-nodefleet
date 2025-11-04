@@ -41,6 +41,8 @@ export default defineConfig({
         },
       },
     },
+    // Copy public files including redirects
+    copyPublicDir: true,
   },
   define: {
     global: 'globalThis',

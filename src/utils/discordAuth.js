@@ -11,15 +11,13 @@ const DISCORD_ROLE_ID = import.meta.env.VITE_DISCORD_ROLE_ID;
 // Esto debe coincidir exactamente con la configurada en Discord Developer Portal
 const DISCORD_REDIRECT_URI = import.meta.env.VITE_DISCORD_REDIRECT_URI || window.location.origin;
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
+// URL del backend para verificar roles (evita CORS)
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
 
 /**
  * Genera la URL de autorización de Discord OAuth
  */
 export const getDiscordAuthUrl = () => {
-  console.log('🔄 [Discord Auth] Generando URL de autorización...');
-  console.log('📝 [Discord Auth] Client ID:', DISCORD_CLIENT_ID);
-  console.log('📝 [Discord Auth] Redirect URI:', DISCORD_REDIRECT_URI);
-  
   const scopes = ['identify', 'guilds'];
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
@@ -29,14 +27,6 @@ export const getDiscordAuthUrl = () => {
   });
 
   const authUrl = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
-  console.log('✅ [Discord Auth] URL de autorización generada:', authUrl);
-  console.log('📋 [Discord Auth] Parámetros:', {
-    client_id: DISCORD_CLIENT_ID,
-    redirect_uri: DISCORD_REDIRECT_URI,
-    response_type: 'code',
-    scope: scopes.join(' '),
-  });
-
   return authUrl;
 };
 
@@ -46,10 +36,6 @@ export const getDiscordAuthUrl = () => {
 export const exchangeCodeForToken = async (code, redirectUri = null) => {
   try {
     const finalRedirectUri = redirectUri || DISCORD_REDIRECT_URI;
-    console.log('🔄 [Discord Auth] Iniciando intercambio de código por token...');
-    console.log('📝 [Discord Auth] Código recibido:', code);
-    console.log('📝 [Discord Auth] Redirect URI a usar:', finalRedirectUri);
-    console.log('📝 [Discord Auth] Redirect URI por defecto:', DISCORD_REDIRECT_URI);
     
     // Usamos Client ID y Secret para intercambiar el código
     // ⚠️ En un entorno de producción, esto debería hacerse en el backend
@@ -67,12 +53,6 @@ export const exchangeCodeForToken = async (code, redirectUri = null) => {
       }),
     });
 
-    console.log('📡 [Discord Auth] Respuesta del API de token:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
     if (!response.ok) {
       const error = await response.json();
       console.error('❌ [Discord Auth] Token exchange error:', error);
@@ -80,15 +60,9 @@ export const exchangeCodeForToken = async (code, redirectUri = null) => {
     }
 
     const data = await response.json();
-    console.log('✅ [Discord Auth] Token exchange exitoso:', {
-      token_type: data.token_type,
-      expires_in: data.expires_in,
-      scope: data.scope,
-      access_token: data.access_token ? '***TOKEN_RECIBIDO***' : 'NO_TOKEN',
-    });
     return data.access_token;
   } catch (error) {
-    console.error('❌ [Discord Auth] Error intercambiando código por token:', error);
+    console.error('❌ [Discord Auth] Error exchanging code for token:', error);
     throw error;
   }
 };
@@ -98,17 +72,10 @@ export const exchangeCodeForToken = async (code, redirectUri = null) => {
  */
 export const getDiscordUser = async (accessToken) => {
   try {
-    console.log('🔄 [Discord Auth] Obteniendo información del usuario...');
     const response = await fetch(`${DISCORD_API_BASE}/users/@me`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
-    });
-
-    console.log('📡 [Discord Auth] Respuesta del API de usuario:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
     });
 
     if (!response.ok) {
@@ -118,17 +85,9 @@ export const getDiscordUser = async (accessToken) => {
     }
 
     const userData = await response.json();
-    console.log('✅ [Discord Auth] Usuario obtenido:', {
-      id: userData.id,
-      username: userData.username,
-      discriminator: userData.discriminator,
-      avatar: userData.avatar ? '***AVATAR_PRESENTE***' : 'NO_AVATAR',
-      email: userData.email || 'NO_EMAIL',
-      verified: userData.verified,
-    });
     return userData;
   } catch (error) {
-    console.error('❌ [Discord Auth] Error obteniendo usuario de Discord:', error);
+    console.error('❌ [Discord Auth] Error getting Discord user:', error);
     throw error;
   }
 };
@@ -139,21 +98,11 @@ export const getDiscordUser = async (accessToken) => {
  */
 export const verifyGuildMembership = async (accessToken, userId) => {
   try {
-    console.log('🔄 [Discord Auth] Verificando membresía del servidor...');
-    console.log('📝 [Discord Auth] User ID:', userId);
-    console.log('📝 [Discord Auth] Guild ID esperado:', DISCORD_GUILD_ID);
-    
     // Obtener lista de servidores del usuario
     const response = await fetch(`${DISCORD_API_BASE}/users/@me/guilds`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
-    });
-
-    console.log('📡 [Discord Auth] Respuesta del API de guilds:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
     });
 
     if (!response.ok) {
@@ -166,106 +115,69 @@ export const verifyGuildMembership = async (accessToken, userId) => {
     }
 
     const guilds = await response.json();
-    console.log('📋 [Discord Auth] Lista de guilds del usuario:', {
-      totalGuilds: guilds.length,
-      guilds: guilds.map(g => ({ id: g.id, name: g.name })),
-    });
 
     // Buscar el servidor específico en la lista
     const guild = guilds.find(g => g.id === DISCORD_GUILD_ID);
 
     if (!guild) {
-      console.warn('⚠️ [Discord Auth] Usuario NO es miembro del servidor requerido');
-      return null; // Usuario no es miembro del servidor
+      return null; // User is not a member of the server
     }
 
-    console.log('✅ [Discord Auth] Usuario ES miembro del servidor:', {
-      guildId: guild.id,
-      guildName: guild.name,
-    });
-
-    // Si encontramos el servidor, obtener información del miembro
-    // Nota: Para obtener roles, necesitaríamos usar un endpoint diferente con bot token
-    // Por ahora, verificaremos roles usando el endpoint de guild members
+    // Si encontramos el servidor, obtener información del miembro con roles
+    // Usar backend para evitar CORS y usar bot token
     try {
-      console.log('🔄 [Discord Auth] Obteniendo información del miembro...');
-      const memberResponse = await fetch(
-        `${DISCORD_API_BASE}/guilds/${DISCORD_GUILD_ID}/members/${userId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      console.log('📡 [Discord Auth] Respuesta del API de member:', {
-        status: memberResponse.status,
-        statusText: memberResponse.statusText,
-        ok: memberResponse.ok,
+      const backendResponse = await fetch(`${BACKEND_API_URL}/api/discord/verify-member`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          accessToken: accessToken, // Por si el backend necesita validar algo
+        }),
       });
 
-      if (memberResponse.ok) {
-        const memberData = await memberResponse.json();
-        console.log('✅ [Discord Auth] Información del miembro obtenida:', {
-          user: memberData.user ? {
-            id: memberData.user.id,
-            username: memberData.user.username,
-          } : 'NO_USER',
-          roles: memberData.roles || [],
-          totalRoles: (memberData.roles || []).length,
-        });
-        return memberData;
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        
+        // Retornar en formato compatible con el código existente
+        return {
+          id: guild.id,
+          user: {
+            id: backendData.member.id,
+            username: backendData.member.username,
+          },
+          roles: backendData.member.roles || [],
+        };
       }
 
-      // Si el endpoint falla, retornamos la información básica del guild
-      console.warn('⚠️ [Discord Auth] No se pudo obtener información del miembro, usando info básica');
+      // Si el backend falla, retornamos la información básica del guild
+      const errorData = await backendResponse.json().catch(() => ({}));
+      console.error('❌ [Discord Auth] Backend error:', errorData.message || 'Unknown error');
       return { id: guild.id, roles: [] };
     } catch (e) {
-      console.warn('⚠️ [Discord Auth] Error al obtener detalles del miembro:', e);
-      // Si no podemos obtener detalles del miembro, retornamos que sí es miembro
+      console.error('❌ [Discord Auth] Error getting member details via backend:', e);
+      // If we can't get member details, return that they are a member
       return { id: guild.id, roles: [] };
     }
   } catch (error) {
-    console.error('❌ [Discord Auth] Error verificando membresía del servidor:', error);
+    console.error('❌ [Discord Auth] Error verifying server membership:', error);
     throw error;
   }
 };
 
 /**
  * Verifica si el usuario tiene el rol especificado
- * Esta función requiere que el bot de la aplicación tenga permisos para ver roles
+ * @param {Object} memberInfo - Información del miembro obtenida de verifyGuildMembership
  */
-export const verifyUserRole = async (accessToken, userId) => {
-  try {
-    console.log('🔄 [Discord Auth] Verificando rol del usuario...');
-    console.log('📝 [Discord Auth] Role ID requerido:', DISCORD_ROLE_ID);
-    
-    // Primero obtenemos la información del miembro en el servidor
-    const memberInfo = await verifyGuildMembership(accessToken, userId);
-
-    if (!memberInfo) {
-      console.warn('⚠️ [Discord Auth] No hay información del miembro, no puede tener el rol');
-      return false;
-    }
-
-    // Verificamos si el rol está en la lista de roles del miembro
-    const userRoles = memberInfo.roles || [];
-    console.log('📋 [Discord Auth] Roles del usuario:', {
-      totalRoles: userRoles.length,
-      roles: userRoles,
-    });
-    
-    const hasRole = userRoles.includes(DISCORD_ROLE_ID);
-    console.log(hasRole 
-      ? '✅ [Discord Auth] Usuario TIENE el rol requerido' 
-      : '❌ [Discord Auth] Usuario NO tiene el rol requerido'
-    );
-    
-    return hasRole;
-  } catch (error) {
-    console.error('❌ [Discord Auth] Error verificando rol del usuario:', error);
-    throw error;
+export const verifyUserRole = (memberInfo) => {
+  if (!memberInfo) {
+    return false;
   }
+
+  // Verificamos si el rol está en la lista de roles del miembro
+  const userRoles = memberInfo.roles || [];
+  return userRoles.includes(DISCORD_ROLE_ID);
 };
 
 /**
@@ -276,12 +188,6 @@ export const verifyUserRole = async (accessToken, userId) => {
  */
 export const authenticateAndValidateDiscord = async (code, redirectUri = null) => {
   try {
-    console.log('🚀 [Discord Auth] ========================================');
-    console.log('🚀 [Discord Auth] INICIANDO AUTENTICACIÓN Y VALIDACIÓN');
-    console.log('🚀 [Discord Auth] ========================================');
-    console.log('📝 [Discord Auth] Código recibido:', code);
-    console.log('📝 [Discord Auth] Redirect URI recibido:', redirectUri);
-    
     // Determinar el redirect_uri si no se proporciona
     let finalRedirectUri = redirectUri;
     if (!finalRedirectUri && typeof window !== 'undefined') {
@@ -297,55 +203,37 @@ export const authenticateAndValidateDiscord = async (code, redirectUri = null) =
       finalRedirectUri = DISCORD_REDIRECT_URI;
     }
 
-    console.log('📝 [Discord Auth] Redirect URI final:', finalRedirectUri);
-    console.log('📝 [Discord Auth] Client ID:', DISCORD_CLIENT_ID);
-    console.log('📝 [Discord Auth] Guild ID:', DISCORD_GUILD_ID);
-    console.log('📝 [Discord Auth] Role ID:', DISCORD_ROLE_ID);
-
     // 1. Intercambiar código por token
-    console.log('\n📌 [Discord Auth] PASO 1: Intercambiando código por token...');
     const accessToken = await exchangeCodeForToken(code, finalRedirectUri);
 
     // 2. Obtener información del usuario
-    console.log('\n📌 [Discord Auth] PASO 2: Obteniendo información del usuario...');
     const user = await getDiscordUser(accessToken);
 
-    // 3. Verificar membresía del servidor
-    console.log('\n📌 [Discord Auth] PASO 3: Verificando membresía del servidor...');
-    const isGuildMember = await verifyGuildMembership(accessToken, user.id);
+    // 3. Verificar membresía del servidor (obtiene memberInfo con roles)
+    const memberInfo = await verifyGuildMembership(accessToken, user.id);
 
-    if (!isGuildMember) {
-      console.error('❌ [Discord Auth] VALIDACIÓN FALLIDA: No es miembro del servidor');
+    if (!memberInfo) {
+      console.error('❌ [Discord Auth] VALIDATION FAILED: Not a member of the server');
       return {
         user: null,
         isValid: false,
-        error: 'You are not a member of the required server',
+        error: 'You are not a member of the Passage Discord server. Join the Passage server and request the developers role.',
       };
     }
 
-    // 4. Verificar rol
-    console.log('\n📌 [Discord Auth] PASO 4: Verificando rol del usuario...');
-    const hasRole = await verifyUserRole(accessToken, user.id);
+    // 4. Verificar rol usando la información del miembro ya obtenida
+    const hasRole = verifyUserRole(memberInfo);
 
     if (!hasRole) {
-      console.error('❌ [Discord Auth] VALIDACIÓN FALLIDA: No tiene el rol requerido');
+      console.error('❌ [Discord Auth] VALIDATION FAILED: Does not have the required role');
       return {
         user: null,
         isValid: false,
-        error: 'You do not have the required "faucet" role',
+        error: 'You do not have the required "developers" role. Join the Passage server and request the developers role.',
       };
     }
 
     // 5. Todo está correcto
-    console.log('\n✅ [Discord Auth] ========================================');
-    console.log('✅ [Discord Auth] AUTENTICACIÓN EXITOSA');
-    console.log('✅ [Discord Auth] ========================================');
-    console.log('✅ [Discord Auth] Usuario validado:', {
-      id: user.id,
-      username: user.username,
-      discriminator: user.discriminator,
-    });
-    
     const result = {
       user: {
         ...user,
@@ -354,23 +242,9 @@ export const authenticateAndValidateDiscord = async (code, redirectUri = null) =
       isValid: true,
     };
     
-    console.log('📦 [Discord Auth] Resultado final completo:', {
-      isValid: result.isValid,
-      user: {
-        id: result.user.id,
-        username: result.user.username,
-        hasAccessToken: !!result.user.accessToken,
-      },
-    });
-    
     return result;
   } catch (error) {
-    console.error('❌ [Discord Auth] ========================================');
-    console.error('❌ [Discord Auth] ERROR EN AUTENTICACIÓN');
-    console.error('❌ [Discord Auth] ========================================');
-    console.error('❌ [Discord Auth] Error:', error);
-    console.error('❌ [Discord Auth] Mensaje:', error.message);
-    console.error('❌ [Discord Auth] Stack:', error.stack);
+    console.error('❌ [Discord Auth] Authentication error:', error);
     
     return {
       user: null,

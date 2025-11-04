@@ -90,7 +90,6 @@ const FaucetDetail = () => {
           // Configuración para Passage - usar RPC de Firebase
           privateKeyOrMnemonic = import.meta.env.VITE_PASSAGE_FAUCET_MNEMONIC;
           if (!privateKeyOrMnemonic) {
-            console.warn("the VITE_PASSAGE_FAUCET_MNEMONIC is not configured");
             return;
           }
 
@@ -110,7 +109,6 @@ const FaucetDetail = () => {
           // Configuración para Ethereum/Story Protocol - usar configuración del blockchain
           privateKeyOrMnemonic = import.meta.env.VITE_FAUCET_PRIVATE_KEY;
           if (!privateKeyOrMnemonic) {
-            console.warn("VITE_FAUCET_PRIVATE_KEY is not configured");
             return;
           }
 
@@ -132,7 +130,6 @@ const FaucetDetail = () => {
           const balanceInfo = await manager.getBalance();
           setBalance(balanceInfo);
         } catch (balanceError) {
-          console.warn("Could not get balance, using simulated balance");
           setBalance({
             amount: "1000000000000000000",
             formatted: "1.0 ETH (simulado)",
@@ -166,49 +163,28 @@ const FaucetDetail = () => {
   useEffect(() => {
     if (id !== "7kHOvCFdBvrTy5UXmJRH") return;
 
-    console.log("🔄 [FaucetDetail] Cargando estado de Discord desde localStorage...");
     const savedDiscordData = localStorage.getItem("discord_auth_data");
     if (savedDiscordData) {
-      console.log("📦 [FaucetDetail] Datos de Discord encontrados en localStorage:", savedDiscordData);
       try {
         const parsed = JSON.parse(savedDiscordData);
-        console.log("✅ [FaucetDetail] Datos parseados exitosamente:", {
-          user: parsed.user ? {
-            id: parsed.user.id,
-            username: parsed.user.username,
-            discriminator: parsed.user.discriminator,
-          } : null,
-          timestamp: parsed.timestamp,
-          timestampDate: parsed.timestamp ? new Date(parsed.timestamp).toISOString() : null,
-        });
         setDiscordUser(parsed.user);
         setDiscordConnected(true);
         setIsConnected(true);
-        setDiscordError(null); // Clear any previous error
-        console.log("✅ [FaucetDetail] Estado de Discord restaurado desde localStorage");
+        setDiscordError(null);
       } catch (error) {
-        console.error("❌ [FaucetDetail] Error parsing saved Discord data:", error);
+        console.error(
+          "❌ [FaucetDetail] Error parsing saved Discord data:",
+          error
+        );
         localStorage.removeItem("discord_auth_data");
-        setDiscordError(null); // Clear error on invalid data
+        setDiscordError(null);
       }
-    } else {
-      console.log("ℹ️ [FaucetDetail] No hay datos de Discord guardados en localStorage");
     }
-  }, [id]);
+  }, []);
 
   // Manejar callback de Discord OAuth
   useEffect(() => {
     if (id !== "7kHOvCFdBvrTy5UXmJRH") return;
-
-    console.log("🔄 [FaucetDetail] Verificando callback de Discord OAuth...");
-    console.log("📝 [FaucetDetail] URL completa:", window.location.href);
-    console.log("📝 [FaucetDetail] Hash:", window.location.hash);
-    console.log("📝 [FaucetDetail] Search:", window.location.search);
-    console.log("📝 [FaucetDetail] Estado actual:", {
-      discordConnected,
-      processingCode,
-      hasDiscordUser: !!discordUser,
-    });
 
     // Con HashRouter, el query string puede estar en el hash o en search
     // Intentar obtener el código de ambos lugares
@@ -228,17 +204,13 @@ const FaucetDetail = () => {
     const error = urlParams.get("error");
     const errorDescription = urlParams.get("error_description");
 
-    console.log("📋 [FaucetDetail] Parámetros extraídos de la URL:", {
-      code: code || "NO_CODE",
-      error: error || "NO_ERROR",
-      errorDescription: errorDescription || "NO_ERROR_DESCRIPTION",
-      hashQuery,
-      queryString,
-    });
-
     // Si hay un error en la URL, mostrarlo
     if (error) {
-      console.error("❌ [FaucetDetail] Discord OAuth error en URL:", error, errorDescription);
+      console.error(
+        "❌ [FaucetDetail] Discord OAuth error en URL:",
+        error,
+        errorDescription
+      );
       toast.error(`Discord OAuth error: ${errorDescription || error}`);
       return;
     }
@@ -246,12 +218,9 @@ const FaucetDetail = () => {
     // Si hay un código, procesarlo (NO LIMPIAR LA URL)
     // Prevenir procesar el mismo código dos veces
     if (code && !discordConnected && processingCode !== code) {
-      console.log("🚀 [FaucetDetail] Código encontrado, iniciando procesamiento...");
-      setProcessingCode(code); // Marcar que estamos procesando este código
+      setProcessingCode(code);
       const processCallback = async () => {
         try {
-          console.log("🔄 [FaucetDetail] Procesando callback de Discord...");
-          
           // Capturar el redirect_uri (sin query string del hash)
           const currentHash = window.location.hash || "";
           let redirectUri = null;
@@ -263,76 +232,55 @@ const FaucetDetail = () => {
             redirectUri = window.location.origin + window.location.pathname;
           }
 
-          console.log("📝 [FaucetDetail] Redirect URI calculado:", redirectUri);
-          console.log("📝 [FaucetDetail] Código a procesar:", code);
-
           toast.loading("Validating Discord connection...");
 
           // Validar Discord pasando el redirect_uri
-          console.log("🔄 [FaucetDetail] Llamando a authenticateAndValidateDiscord...");
           const result = await authenticateAndValidateDiscord(
             code,
             redirectUri
           );
 
-          console.log("📦 [FaucetDetail] Resultado de authenticateAndValidateDiscord:", {
-            isValid: result.isValid,
-            hasUser: !!result.user,
-            user: result.user ? {
-              id: result.user.id,
-              username: result.user.username,
-              discriminator: result.user.discriminator,
-              hasAccessToken: !!result.user.accessToken,
-            } : null,
-            error: result.error || "NO_ERROR",
-          });
-
           if (result.isValid) {
-            console.log("✅ [FaucetDetail] Validación exitosa, guardando en localStorage...");
-            
             // Guardar en localStorage para persistencia
             const dataToSave = {
               user: result.user,
               timestamp: Date.now(),
             };
-            console.log("💾 [FaucetDetail] Datos a guardar en localStorage:", {
-              user: {
-                id: dataToSave.user.id,
-                username: dataToSave.user.username,
-              },
-              timestamp: dataToSave.timestamp,
-              timestampDate: new Date(dataToSave.timestamp).toISOString(),
-            });
-            
+
             localStorage.setItem(
               "discord_auth_data",
               JSON.stringify(dataToSave)
             );
-            console.log("✅ [FaucetDetail] Datos guardados en localStorage exitosamente");
 
             setDiscordUser(result.user);
             setDiscordConnected(true);
             setIsConnected(true);
-            setDiscordError(null); // Clear error on success
-            setProcessingCode(null); // Clear processing flag
+            setDiscordError(null);
+            setProcessingCode(null);
             toast.dismiss();
             toast.success("Successfully connected with Discord!");
-            console.log("✅ [FaucetDetail] Estado actualizado exitosamente");
           } else {
-            console.error("❌ [FaucetDetail] Discord validation failed:", result.error);
+            console.error(
+              "❌ [FaucetDetail] Discord validation failed:",
+              result.error
+            );
             toast.dismiss();
 
             // Set error message based on error type
             let errorMessage = result.error || "Failed to validate Discord";
             if (
               result.error?.toLowerCase().includes("server") ||
-              result.error?.toLowerCase().includes("guild")
+              result.error?.toLowerCase().includes("guild") ||
+              result.error?.toLowerCase().includes("not a member")
             ) {
               errorMessage =
-                "You are not a member of the required Discord server";
-            } else if (result.error?.toLowerCase().includes("role")) {
+                "You are not a member of the Passage Discord server. Join the Passage server and request the developers role.";
+            } else if (
+              result.error?.toLowerCase().includes("role") ||
+              result.error?.toLowerCase().includes("developers")
+            ) {
               errorMessage =
-                "You don't have the required role in the Discord server";
+                "You do not have the required 'developers' role. Join the Passage server and request the developers role.";
             } else if (
               result.error?.toLowerCase().includes("code") ||
               result.error?.toLowerCase().includes("invalid")
@@ -341,44 +289,27 @@ const FaucetDetail = () => {
                 "Invalid authorization code. Please try connecting again.";
             }
 
-            console.error("❌ [FaucetDetail] Error message final:", errorMessage);
+            console.error(
+              "❌ [FaucetDetail] Error message final:",
+              errorMessage
+            );
             setDiscordError(errorMessage);
-            setProcessingCode(null); // Clear processing flag on error
-            // Limpiar localStorage en caso de error
+            setProcessingCode(null);
             localStorage.removeItem("discord_auth_data");
-            console.log("🗑️ [FaucetDetail] localStorage limpiado debido a error");
           }
         } catch (error) {
           console.error("❌ [FaucetDetail] Discord callback error:", error);
-          console.error("❌ [FaucetDetail] Error details:", {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          });
           toast.dismiss();
           const errorMessage =
             error.message || "Unknown error occurred while validating Discord";
           setDiscordError(errorMessage);
-          setProcessingCode(null); // Clear processing flag on error
-          // Limpiar localStorage en caso de error
+          setProcessingCode(null);
           localStorage.removeItem("discord_auth_data");
-          console.log("🗑️ [FaucetDetail] localStorage limpiado debido a excepción");
         }
       };
       processCallback();
-    } else {
-      if (code) {
-        console.log("ℹ️ [FaucetDetail] Código encontrado pero no se procesará:", {
-          reason: discordConnected ? "Ya está conectado" : processingCode === code ? "Ya se está procesando este código" : "Desconocido",
-          discordConnected,
-          processingCode,
-          code,
-        });
-      } else {
-        console.log("ℹ️ [FaucetDetail] No hay código en la URL para procesar");
-      }
     }
-  }, [id, discordConnected, processingCode, discordUser]);
+  }, []);
 
   const handleBlockchainChange = async (blockchainId) => {
     if (blockchainId !== id) {
@@ -423,32 +354,20 @@ const FaucetDetail = () => {
 
   const handleDiscordLogin = async () => {
     try {
-      console.log("🔄 [FaucetDetail] handleDiscordLogin llamado");
-      
       // Solo disponible para el faucet de Passage
       if (id !== "7kHOvCFdBvrTy5UXmJRH") {
-        console.warn("⚠️ [FaucetDetail] Discord solo disponible para Passage faucet");
         toast.error("Discord validation is only available for Passage faucet");
         return;
       }
 
       // Clear any previous error when trying to connect again
       setDiscordError(null);
-      console.log("🧹 [FaucetDetail] Error anterior limpiado");
 
       // Redirigir a Discord OAuth
-      console.log("🔄 [FaucetDetail] Obteniendo URL de autenticación de Discord...");
       const authUrl = getDiscordAuthUrl();
-      console.log("🔗 [FaucetDetail] URL de autenticación generada:", authUrl);
-      console.log("🚀 [FaucetDetail] Redirigiendo a Discord OAuth...");
       window.location.href = authUrl;
     } catch (error) {
       console.error("❌ [FaucetDetail] Discord auth error:", error);
-      console.error("❌ [FaucetDetail] Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
       setDiscordError("Failed to connect with Discord. Please try again.");
       toast.error("Failed to connect with Discord");
     }

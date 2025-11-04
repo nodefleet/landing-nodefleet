@@ -127,9 +127,24 @@ class FaucetManager {
       );
 
       const querySnapshot = await getDocs(q);
-      const recentTransactions = querySnapshot.docs.filter(doc =>
-        doc.data().timestamp.toDate() >= twentyFourHoursAgo
-      );
+      
+      // Comparar Timestamps correctamente
+      // Buscamos transacciones que sean más recientes que hace 24 horas
+      const now = Date.now();
+      const twentyFourHoursAgoMs = now - (24 * 60 * 60 * 1000);
+      
+      const recentTransactions = querySnapshot.docs.filter(doc => {
+        const transactionTimestamp = doc.data().timestamp;
+        if (!transactionTimestamp) return false;
+        
+        // Convertir Timestamp de Firebase a milisegundos para comparar
+        const transactionMs = transactionTimestamp.toMillis 
+          ? transactionTimestamp.toMillis() 
+          : transactionTimestamp.toDate().getTime();
+        
+        // Si la transacción es más reciente que hace 24 horas, cuenta
+        return transactionMs >= twentyFourHoursAgoMs;
+      });
 
       if (recentTransactions.length > 0) {
         throw new Error("24-hour limit reached");
@@ -271,10 +286,22 @@ class FaucetManager {
 
       const querySnapshot = await getDocs(q);
 
-      // Filtrar manualmente por timestamp
-      const recentTransactions = querySnapshot.docs.filter(doc =>
-        doc.data().timestamp.toDate() >= twentyFourHoursAgo
-      );
+      // Filtrar manualmente por timestamp comparando Timestamps correctamente
+      const now = Date.now();
+      const twentyFourHoursAgoMs = now - (24 * 60 * 60 * 1000);
+      
+      const recentTransactions = querySnapshot.docs.filter(doc => {
+        const transactionTimestamp = doc.data().timestamp;
+        if (!transactionTimestamp) return false;
+        
+        // Convertir Timestamp de Firebase a milisegundos para comparar
+        const transactionMs = transactionTimestamp.toMillis 
+          ? transactionTimestamp.toMillis() 
+          : transactionTimestamp.toDate().getTime();
+        
+        // Si la transacción es más reciente que hace 24 horas, cuenta
+        return transactionMs >= twentyFourHoursAgoMs;
+      });
 
       return recentTransactions.length > 0;
     } catch (error) {

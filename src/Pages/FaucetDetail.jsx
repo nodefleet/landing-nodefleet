@@ -635,7 +635,7 @@ const FaucetDetail = () => {
                       Processing...
                     </span>
                   ) : blockchain.name === "Passage" ? (
-                    "Request tokens (1 PASG)" //  Solicitar tokens (1 PASG)
+                    "Request tokens (10k PASG)" //  Solicitar tokens (10k PASG)
                   ) : (
                     "Request tokens (1 STORY)"
                   )}

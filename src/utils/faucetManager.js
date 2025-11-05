@@ -239,8 +239,8 @@ class FaucetManager {
     // Conectar cliente firmante
     const client = await SigningStargateClient.connectWithSigner(this.rpcUrl, wallet);
 
-    // Definir el monto a enviar (1 PASG)
-    const amount = coins(1000000, this.denom); // 1 PASG
+    // Definir el monto a enviar (10,000 PASG)
+    const amount = coins(10000000000, this.denom); // 10,000 PASG
 
     // Definir la comisión (Passage requiere 2,500,000 upasg mínimo)
     const fee = {
@@ -262,7 +262,7 @@ class FaucetManager {
       uuid,
       timestamp: Timestamp.now(),
       hash: result.transactionHash,
-      value: 1,
+      value: 10000,
       chainId: this.chainId,
       address: address,
       status: 'completed',

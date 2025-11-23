@@ -672,42 +672,48 @@ const FaucetDetail = () => {
                       >
                         <i className="fas fa-copy"></i> Copy Hash
                       </button>
-                      <button
-                        onClick={() => {
-                          if (blockchain.xLink) {
-                            window.open(blockchain.xLink, "_blank");
-                          } else {
-                            toast.error(
-                              "X link not configured for this blockchain"
-                            );
-                          }
-                        }}
-                        className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
-                      >
-                        Share <i className="fab fa-x-twitter"></i>
-                      </button>
+                      {id !== "7kHOvCFdBvrTy5UXmJRH" && (
+                        <button
+                          onClick={() => {
+                            if (blockchain.xLink) {
+                              window.open(blockchain.xLink, "_blank");
+                            } else {
+                              toast.error(
+                                "X link not configured for this blockchain"
+                              );
+                            }
+                          }}
+                          className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
+                        >
+                          Share <i className="fab fa-x-twitter"></i>
+                        </button>
+                      )}
                     </div>
                   </>
                 ) : (
                   <>
-                    <h3 className="text-lg mb-2">Share a tweet about us</h3>
-                    <p className="text-gray-400 text-sm mb-4">
-                      Help us to get rid of the web3 scam
-                    </p>
-                    <button
-                      onClick={() => {
-                        if (blockchain.xLink) {
-                          window.open(blockchain.xLink, "_blank");
-                        } else {
-                          toast.error(
-                            "X link not configured for this blockchain"
-                          );
-                        }
-                      }}
-                      className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
-                    >
-                      Share <i className="fab fa-x-twitter"></i>
-                    </button>
+                    {id !== "7kHOvCFdBvrTy5UXmJRH" && (
+                      <>
+                        <h3 className="text-lg mb-2">Share a tweet about us</h3>
+                        <p className="text-gray-400 text-sm mb-4">
+                          Help us to get rid of the web3 scam
+                        </p>
+                        <button
+                          onClick={() => {
+                            if (blockchain.xLink) {
+                              window.open(blockchain.xLink, "_blank");
+                            } else {
+                              toast.error(
+                                "X link not configured for this blockchain"
+                              );
+                            }
+                          }}
+                          className="flex items-center gap-2 bg-black px-4 py-2 rounded-lg hover:bg-gray-800 border border-gray-700 transition-colors"
+                        >
+                          Share <i className="fab fa-x-twitter"></i>
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </div>

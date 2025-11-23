@@ -242,68 +242,269 @@ const Faucets = () => {
             </div>
           </div>
 
-          <div className="w-full">
-            <div className="hidden md:grid grid-cols-1 md:grid-cols-6 place-items-center gap-4 p-4 bg-morado3 rounded-t-xl text-gray-300 text-xl font-semibold">
-              <div>Blockchain Node</div>
-              <div>Network</div>
-              <div>Node Type</div>
-              <div>Public RPC Endpoint</div>
-              <div>Faucets</div>
-              <div>Snapshot</div>
-            </div>
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[900px]">
+              <div className="hidden md:grid md:grid-cols-6 place-items-center gap-3 lg:gap-4 p-3 lg:p-4 bg-morado3 rounded-t-xl text-gray-300 text-sm lg:text-lg xl:text-xl font-semibold">
+                <div className="text-center">Blockchain Node</div>
+                <div className="text-center">Network</div>
+                <div className="text-center">Node Type</div>
+                <div className="text-center">Public RPC Endpoint</div>
+                <div className="text-center">Faucets</div>
+                <div className="text-center">Snapshot</div>
+              </div>
 
-            <div className="space-y-4 mt-4 overflow-y-auto max-h-[70vh]">
-              {loading ? (
-                <div className="text-white text-center py-4">Loading...</div>
-              ) : (
-                filteredBlockchains
-                  .sort((a, b) => a.orden - b.orden)
-                  .map((blockchain) => (
-                    <motion.div
-                      key={blockchain.id}
-                      className="bg-morado4 rounded-xl text-white p-4 md:p-6"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {/* Vista para móvil - Card design */}
-                      <div className="md:hidden">
-                        <div className="flex justify-center mb-4">
-                          <img
-                            src={blockchain.logo}
-                            alt={blockchain.name}
-                            className="w-44 h-8 rounded-full object-contain"
-                          />
+              <div className="space-y-4 mt-4 overflow-y-auto max-h-[70vh]">
+                {loading ? (
+                  <div className="text-white text-center py-4">Loading...</div>
+                ) : (
+                  filteredBlockchains
+                    .sort((a, b) => a.orden - b.orden)
+                    .map((blockchain) => (
+                      <motion.div
+                        key={blockchain.id}
+                        className="bg-morado4 rounded-xl text-white p-4 md:p-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {/* Vista para móvil - Card design */}
+                        <div className="md:hidden">
+                          <div className="flex justify-center mb-4">
+                            <img
+                              src={blockchain.logo}
+                              alt={blockchain.name}
+                              className="w-44 h-8 rounded-full object-contain"
+                            />
+                          </div>
+
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="text-gray-300 font-medium">
+                              Network:
+                            </div>
+                            <div className="bg-[#3c7b97] text-sm font-medium px-3 py-1.5 rounded-lg">
+                              {blockchain.network}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="text-gray-300 font-medium">
+                              Node Type:
+                            </div>
+                            <div className="bg-[#484c71] text-sm font-medium px-3 py-1.5 rounded-lg">
+                              {blockchain.nodeType}
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="text-gray-300 font-medium mb-2">
+                              Public RPC Endpoint:
+                            </div>
+                            <div className="bg-[#3d4954] px-3 py-3 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <i className="fa-solid fa-link"></i>
+                                <a
+                                  href={selectedEndpoints[blockchain.id]?.value}
+                                  className="text-white text-sm font-medium"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Endpoint link
+                                </a>
+                              </div>
+                              <select
+                                onChange={(e) =>
+                                  handleEndpointChange(
+                                    e,
+                                    blockchain.rpcLinks,
+                                    blockchain.id
+                                  )
+                                }
+                                value={
+                                  selectedEndpoints[blockchain.id]?.value || ""
+                                }
+                                className="text-[#3d4954] text-sm font-bold focus:outline-[#99dfaf] px-3 py-1.5 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-full"
+                              >
+                                {blockchain.rpcLinks.map((link, index) => (
+                                  <option key={index} value={link.value}>
+                                    {link.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col">
+                              <div className="text-gray-300 font-medium mb-2">
+                                Faucets:
+                              </div>
+                              <div className="flex justify-center">
+                                {blockchain.faucetLink ? (
+                                  blockchain.name.toLowerCase() ===
+                                  "snapshot" ? (
+                                    <>
+                                      <a
+                                        href={blockchain.faucetLink}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                      >
+                                        Faucet{" "}
+                                        <i className="fa-solid fa-download"></i>
+                                      </a>
+                                    </>
+                                  ) : blockchain.faucetLink === "passage" ? (
+                                    <Link
+                                      to={`/faucets/${blockchain.id}`}
+                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    >
+                                      Faucet{" "}
+                                      <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                    </Link>
+                                  ) : isValidUrl(blockchain.faucetLink) ? (
+                                    <a
+                                      href={blockchain.faucetLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    >
+                                      Faucet{" "}
+                                      <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                    </a>
+                                  ) : (
+                                    <Link
+                                      to={`/faucets/${blockchain.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    >
+                                      Faucet{" "}
+                                      <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                    </Link>
+                                  )
+                                ) : (
+                                  <div className="text-gray-300">N/A</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Para la vista móvil */}
+                            <div className="flex flex-col">
+                              <div className="text-gray-300 font-medium mb-2">
+                                Snapshot:
+                              </div>
+                              <div className="flex justify-center">
+                                {blockchain.snapshotLink ? (
+                                  Array.isArray(blockchain.snapshotLink) ? (
+                                    <div className="bg-[#3d4954] px-3 py-3 rounded-lg w-full">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <i className="fa-solid fa-link"></i>
+                                        <a
+                                          href={
+                                            selectedSnapshots[blockchain.id]
+                                              ?.value
+                                          }
+                                          className="text-white text-sm font-medium"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          Snapshot link
+                                        </a>
+                                      </div>
+                                      <select
+                                        onChange={(e) =>
+                                          handleSnapshotChange(
+                                            e,
+                                            blockchain.snapshotLink,
+                                            blockchain.id
+                                          )
+                                        }
+                                        value={
+                                          selectedSnapshots[blockchain.id]
+                                            ?.value || ""
+                                        }
+                                        className="text-[#3d4954] text-sm font-bold focus:outline-[#99dfaf] px-3 py-1.5 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-full"
+                                      >
+                                        {blockchain.snapshotLink.map(
+                                          (link, index) => (
+                                            <option
+                                              key={index}
+                                              value={link.value}
+                                            >
+                                              {link.label}
+                                            </option>
+                                          )
+                                        )}
+                                      </select>
+                                    </div>
+                                  ) : blockchain.name.toLowerCase() ===
+                                    "snapshot" ? (
+                                    <>
+                                      <a
+                                        href={blockchain.snapshotLink}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                      >
+                                        Snapshot{" "}
+                                        <i className="fa-solid fa-download"></i>
+                                      </a>
+                                    </>
+                                  ) : isValidUrl(blockchain.snapshotLink) ? (
+                                    <a
+                                      href={blockchain.snapshotLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    >
+                                      Snapshot{" "}
+                                      <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                    </a>
+                                  ) : (
+                                    <Link
+                                      to={`/faucets/${blockchain.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    >
+                                      Snapshot{" "}
+                                      <i className="fa-solid fa-arrow-right -rotate-45"></i>
+                                    </Link>
+                                  )
+                                ) : (
+                                  <div className="text-gray-300">N/A</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="text-gray-300 font-medium">
-                            Network:
+                        {/* Vista para desktop - Grid layout (mantener el original) */}
+                        <div className="hidden md:grid md:grid-cols-6 place-items-center gap-3 lg:gap-4 min-w-[900px]">
+                          <div className="flex items-center gap-2 justify-center">
+                            <img
+                              src={blockchain.logo}
+                              alt={blockchain.name}
+                              className="w-32 lg:w-44 h-6 lg:h-8 rounded-full"
+                            />
                           </div>
-                          <div className="bg-[#3c7b97] text-sm font-medium px-3 py-1.5 rounded-lg">
+
+                          <div className="bg-[#3c7b97] text-sm lg:text-lg px-2 lg:px-3 py-2 lg:py-3 rounded-lg w-fit text-center whitespace-nowrap">
                             {blockchain.network}
                           </div>
-                        </div>
 
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="text-gray-300 font-medium">
-                            Node Type:
-                          </div>
-                          <div className="bg-[#484c71] text-sm font-medium px-3 py-1.5 rounded-lg">
+                          <div className="bg-[#484c71] text-sm lg:text-lg px-2 lg:px-3 py-2 lg:py-3 rounded-lg w-fit text-center whitespace-nowrap">
                             {blockchain.nodeType}
                           </div>
-                        </div>
 
-                        <div className="mb-4">
-                          <div className="text-gray-300 font-medium mb-2">
-                            Public RPC Endpoint:
-                          </div>
-                          <div className="bg-[#3d4954] px-3 py-3 rounded-lg">
-                            <div className="flex items-center gap-2 mb-2">
-                              <i className="fa-solid fa-link"></i>
+                          <div className="flex flex-col lg:flex-row gap-2 lg:gap-4 bg-[#3d4954] px-2 lg:px-3 py-2 lg:py-3 rounded-lg items-center">
+                            <div className="flex items-center gap-2">
+                              <i className="fa-solid fa-link text-sm lg:text-base"></i>
                               <a
                                 href={selectedEndpoints[blockchain.id]?.value}
-                                className="text-white text-sm font-medium"
+                                className="text-white text-sm lg:text-lg font-medium whitespace-nowrap"
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -321,7 +522,7 @@ const Faucets = () => {
                               value={
                                 selectedEndpoints[blockchain.id]?.value || ""
                               }
-                              className="text-[#3d4954] text-sm font-bold focus:outline-[#99dfaf] px-3 py-1.5 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-full"
+                              className="text-[#3d4954] text-sm lg:text-lg font-bold focus:outline-[#99dfaf] px-2 lg:px-4 py-1 lg:py-2 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors"
                             >
                               {blockchain.rpcLinks.map((link, index) => (
                                 <option key={index} value={link.value}>
@@ -330,355 +531,158 @@ const Faucets = () => {
                               ))}
                             </select>
                           </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex flex-col">
-                            <div className="text-gray-300 font-medium mb-2">
-                              Faucets:
-                            </div>
-                            <div className="flex justify-center">
-                              {blockchain.faucetLink ? (
-                                blockchain.name.toLowerCase() === "snapshot" ? (
-                                  <>
-                                    <a
-                                      href={blockchain.faucetLink}
-                                      download
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                    >
-                                      Faucet{" "}
-                                      <i className="fa-solid fa-download"></i>
-                                    </a>
-                                  </>
-                                ) : blockchain.faucetLink === "passage" ? (
-                                  <Link
-                                    to={`/faucets/${blockchain.id}`}
-                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                  >
-                                    Faucet{" "}
-                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
-                                  </Link>
-                                ) : isValidUrl(blockchain.faucetLink) ? (
+                          <div className="flex justify-center">
+                            {blockchain.faucetLink ? (
+                              blockchain.name.toLowerCase() === "snapshot" ? (
+                                <>
                                   <a
                                     href={blockchain.faucetLink}
+                                    download
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
+                                    className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
                                   >
-                                    Faucet{" "}
-                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
-                                  </a>
-                                ) : (
-                                  <Link
-                                    to={`/faucets/${blockchain.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                  >
-                                    Faucet{" "}
-                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
-                                  </Link>
-                                )
-                              ) : (
-                                <div className="text-gray-300">N/A</div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Para la vista móvil */}
-                          <div className="flex flex-col">
-                            <div className="text-gray-300 font-medium mb-2">
-                              Snapshot:
-                            </div>
-                            <div className="flex justify-center">
-                              {blockchain.snapshotLink ? (
-                                Array.isArray(blockchain.snapshotLink) ? (
-                                  <div className="bg-[#3d4954] px-3 py-3 rounded-lg w-full">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <i className="fa-solid fa-link"></i>
-                                      <a
-                                        href={
-                                          selectedSnapshots[blockchain.id]
-                                            ?.value
-                                        }
-                                        className="text-white text-sm font-medium"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        Snapshot link
-                                      </a>
+                                    {blockchain.name}{" "}
+                                    <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                      <i className="fa-solid fa-download text-base lg:text-xl"></i>
                                     </div>
-                                    <select
-                                      onChange={(e) =>
-                                        handleSnapshotChange(
-                                          e,
-                                          blockchain.snapshotLink,
-                                          blockchain.id
-                                        )
-                                      }
-                                      value={
-                                        selectedSnapshots[blockchain.id]
-                                          ?.value || ""
-                                      }
-                                      className="text-[#3d4954] text-sm font-bold focus:outline-[#99dfaf] px-3 py-1.5 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-full"
-                                    >
-                                      {blockchain.snapshotLink.map(
-                                        (link, index) => (
-                                          <option
-                                            key={index}
-                                            value={link.value}
-                                          >
-                                            {link.label}
-                                          </option>
-                                        )
-                                      )}
-                                    </select>
-                                  </div>
-                                ) : blockchain.name.toLowerCase() ===
-                                  "snapshot" ? (
-                                  <>
-                                    <a
-                                      href={blockchain.snapshotLink}
-                                      download
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                    >
-                                      Snapshot{" "}
-                                      <i className="fa-solid fa-download"></i>
-                                    </a>
-                                  </>
-                                ) : isValidUrl(blockchain.snapshotLink) ? (
-                                  <a
-                                    href={blockchain.snapshotLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                  >
-                                    Snapshot{" "}
-                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
                                   </a>
-                                ) : (
-                                  <Link
-                                    to={`/faucets/${blockchain.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#7a65d0] px-3 py-1.5 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2"
-                                  >
-                                    Snapshot{" "}
-                                    <i className="fa-solid fa-arrow-right -rotate-45"></i>
-                                  </Link>
-                                )
-                              ) : (
-                                <div className="text-gray-300">N/A</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Vista para desktop - Grid layout (mantener el original) */}
-                      <div className="hidden md:grid md:grid-cols-6 place-items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={blockchain.logo}
-                            alt={blockchain.name}
-                            className="w-44 h-8 rounded-full"
-                          />
-                        </div>
-
-                        <div className="bg-[#3c7b97] text-lg px-3 py-3 rounded-lg w-fit text-center">
-                          {blockchain.network}
-                        </div>
-
-                        <div className="bg-[#484c71] px-3 py-3 rounded-lg w-fit text-center">
-                          {blockchain.nodeType}
-                        </div>
-
-                        <div className="flex flex-col md:flex-row gap-4 bg-[#3d4954] px-3 py-3 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <i className="fa-solid fa-link"></i>
-                            <a
-                              href={selectedEndpoints[blockchain.id]?.value}
-                              className="text-white text-lg font-medium text-nowrap"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Endpoint link
-                            </a>
-                          </div>
-                          <select
-                            onChange={(e) =>
-                              handleEndpointChange(
-                                e,
-                                blockchain.rpcLinks,
-                                blockchain.id
-                              )
-                            }
-                            value={
-                              selectedEndpoints[blockchain.id]?.value || ""
-                            }
-                            className="text-[#3d4954] text-lg font-bold focus:outline-[#99dfaf] px-4 py-2 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-auto"
-                          >
-                            {blockchain.rpcLinks.map((link, index) => (
-                              <option key={index} value={link.value}>
-                                {link.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          {blockchain.faucetLink ? (
-                            blockchain.name.toLowerCase() === "snapshot" ? (
-                              <>
+                                </>
+                              ) : blockchain.faucetLink === "passage" ? (
+                                <Link
+                                  to={`/faucets/${blockchain.id}`}
+                                  className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
+                                >
+                                  {blockchain.name}{" "}
+                                  <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                    <i className="fa-solid fa-arrow-right text-base lg:text-xl -rotate-45"></i>
+                                  </div>
+                                </Link>
+                              ) : isValidUrl(blockchain.faucetLink) ? (
                                 <a
                                   href={blockchain.faucetLink}
-                                  download
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
+                                  className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
                                 >
                                   {blockchain.name}{" "}
-                                  <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                    <i className="fa-solid fa-download text-xl"></i>
+                                  <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                    <i className="fa-solid fa-arrow-right text-base lg:text-xl -rotate-45"></i>
                                   </div>
                                 </a>
-                              </>
-                            ) : blockchain.faucetLink === "passage" ? (
-                              <Link
-                                to={`/faucets/${blockchain.id}`}
-                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
-                              >
-                                {blockchain.name}{" "}
-                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
-                                </div>
-                              </Link>
-                            ) : isValidUrl(blockchain.faucetLink) ? (
-                              <a
-                                href={blockchain.faucetLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
-                              >
-                                {blockchain.name}{" "}
-                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
-                                </div>
-                              </a>
+                              ) : (
+                                <Link
+                                  to={`/faucets/${blockchain.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
+                                >
+                                  {blockchain.name}{" "}
+                                  <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                    <i className="fa-solid fa-arrow-right text-base lg:text-xl -rotate-45"></i>
+                                  </div>
+                                </Link>
+                              )
                             ) : (
-                              <Link
-                                to={`/faucets/${blockchain.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
-                              >
-                                {blockchain.name}{" "}
-                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
-                                </div>
-                              </Link>
-                            )
-                          ) : (
-                            <div className="transition-colors inline-flex items-center gap-6">
-                              N/A
-                            </div>
-                          )}
-                        </div>
+                              <div className="transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base">
+                                N/A
+                              </div>
+                            )}
+                          </div>
 
-                        <div>
-                          {blockchain.snapshotLink ? (
-                            Array.isArray(blockchain.snapshotLink) ? (
-                              <div className="flex gap-4 bg-[#3d4954] px-3 py-3 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <i className="fa-solid fa-link"></i>
-                                  <a
-                                    href={
-                                      selectedSnapshots[blockchain.id]?.value
+                          <div className="flex justify-center">
+                            {blockchain.snapshotLink ? (
+                              Array.isArray(blockchain.snapshotLink) ? (
+                                <div className="flex flex-col lg:flex-row gap-2 lg:gap-4 bg-[#3d4954] px-2 lg:px-3 py-2 lg:py-3 rounded-lg items-center">
+                                  <div className="flex items-center gap-2">
+                                    <i className="fa-solid fa-link text-sm lg:text-base"></i>
+                                    <a
+                                      href={
+                                        selectedSnapshots[blockchain.id]?.value
+                                      }
+                                      className="text-white text-sm lg:text-lg font-medium whitespace-nowrap"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Snapshot
+                                    </a>
+                                  </div>
+                                  <select
+                                    onChange={(e) =>
+                                      handleSnapshotChange(
+                                        e,
+                                        blockchain.snapshotLink,
+                                        blockchain.id
+                                      )
                                     }
-                                    className="text-white text-lg font-medium text-nowrap"
+                                    value={
+                                      selectedSnapshots[blockchain.id]?.value ||
+                                      ""
+                                    }
+                                    className="text-[#3d4954] text-sm lg:text-lg font-bold focus:outline-[#99dfaf] px-2 lg:px-4 py-1 lg:py-2 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors"
+                                  >
+                                    {blockchain.snapshotLink.map(
+                                      (link, index) => (
+                                        <option key={index} value={link.value}>
+                                          {link.label}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                </div>
+                              ) : blockchain.name.toLowerCase() ===
+                                "snapshot" ? (
+                                <>
+                                  <a
+                                    href={blockchain.snapshotLink}
+                                    download
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
                                   >
-                                    Snapshot
+                                    {blockchain.name}{" "}
+                                    <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                      <i className="fa-solid fa-download text-base lg:text-xl"></i>
+                                    </div>
                                   </a>
-                                </div>
-                                <select
-                                  onChange={(e) =>
-                                    handleSnapshotChange(
-                                      e,
-                                      blockchain.snapshotLink,
-                                      blockchain.id
-                                    )
-                                  }
-                                  value={
-                                    selectedSnapshots[blockchain.id]?.value ||
-                                    ""
-                                  }
-                                  className="text-[#3d4954] text-lg font-bold focus:outline-[#99dfaf] px-4 py-2 font-['Roboto'] rounded-lg bg-[#99dfaf] cursor-pointer hover:bg-[#8accA0] transition-colors w-auto"
-                                >
-                                  {blockchain.snapshotLink.map(
-                                    (link, index) => (
-                                      <option key={index} value={link.value}>
-                                        {link.label}
-                                      </option>
-                                    )
-                                  )}
-                                </select>
-                              </div>
-                            ) : blockchain.name.toLowerCase() === "snapshot" ? (
-                              <>
+                                </>
+                              ) : isValidUrl(blockchain.snapshotLink) ? (
                                 <a
                                   href={blockchain.snapshotLink}
-                                  download
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
+                                  className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
                                 >
                                   {blockchain.name}{" "}
-                                  <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                    <i className="fa-solid fa-download text-xl"></i>
+                                  <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                    <i className="fa-solid fa-arrow-right text-base lg:text-xl -rotate-45"></i>
                                   </div>
                                 </a>
-                              </>
-                            ) : isValidUrl(blockchain.snapshotLink) ? (
-                              <a
-                                href={blockchain.snapshotLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
-                              >
-                                {blockchain.name}{" "}
-                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
-                                </div>
-                              </a>
+                              ) : (
+                                <Link
+                                  to={`/faucets/${blockchain.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-[#7a65d0] px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base"
+                                >
+                                  {blockchain.name}{" "}
+                                  <div className="px-2 lg:px-3 py-1 lg:py-1.5 bg-[#5538ce] rounded-lg">
+                                    <i className="fa-solid fa-arrow-right text-base lg:text-xl -rotate-45"></i>
+                                  </div>
+                                </Link>
+                              )
                             ) : (
-                              <Link
-                                to={`/faucets/${blockchain.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#7a65d0] px-4 py-2 rounded-xl hover:bg-[#5538ce] transition-colors inline-flex items-center gap-6"
-                              >
-                                {blockchain.name}{" "}
-                                <div className="px-3 py-1.5 bg-[#5538ce] rounded-lg">
-                                  <i className="fa-solid fa-arrow-right text-xl -rotate-45"></i>
-                                </div>
-                              </Link>
-                            )
-                          ) : (
-                            <div className="transition-colors inline-flex items-center gap-6">
-                              N/A
-                            </div>
-                          )}
+                              <div className="transition-colors inline-flex items-center gap-2 lg:gap-6 text-sm lg:text-base">
+                                N/A
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))
-              )}
+                      </motion.div>
+                    ))
+                )}
+              </div>
             </div>
           </div>
         </motion.div>

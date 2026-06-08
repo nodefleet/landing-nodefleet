@@ -7,6 +7,7 @@ import { getAnalytics, logEvent } from "firebase/analytics";
 import { useEffect } from "react";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import Contact from "./Components/Contac2";
+import LaunchLoader from "./Components/rebrand/LaunchLoader";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCrJTk0-eePPJxOogYYjguHikambSKspIw",
@@ -33,6 +34,7 @@ function App() {
   }, []);
   return (
     <div className="App">
+      <LaunchLoader />
       <HashRouter>
         <Routes>
           <Route path="/" element={<Navbar />}>

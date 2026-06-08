@@ -5,11 +5,233 @@
 body {
   margin: 0;
   background-color: #12111d;
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
+  color: #ffffff;
+  /* Urbanist is the global brand font (rebrand 2026). */
+  font-family:
+    "Urbanist",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU-cheap starfield (layered radial dots, no per-frame layout work).
+   Bright, varied dots with small halos so they read on top of the photo sky. */
+.stars {
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 75% 15%, #ffffff, transparent),
+    radial-gradient(2px 2px at 50% 60%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(3px 3px at 85% 70%, #99dfaf, transparent),
+    radial-gradient(2px 2px at 10% 80%, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 35% 12%, #5aa9e6, transparent),
+    radial-gradient(2px 2px at 65% 85%, #ffffff, transparent),
+    radial-gradient(
+      1.5px 1.5px at 28% 48%,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    ),
+    radial-gradient(2.5px 2.5px at 90% 35%, #ffffff, transparent),
+    radial-gradient(2px 2px at 5% 45%, #99dfaf, transparent),
+    radial-gradient(
+      1.5px 1.5px at 45% 90%,
+      rgba(255, 255, 255, 0.85),
+      transparent
+    ),
+    radial-gradient(3px 3px at 60% 25%, #ffffff, transparent),
+    radial-gradient(2px 2px at 80% 92%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 15% 18%, #5aa9e6, transparent);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/*
+ * Permanent star twinkle. Animates ONLY opacity, driven by CSS keyframes — this
+ * runs on the compositor thread (off the main thread), so it never blocks or
+ * janks scrolling, and costs effectively nothing per frame.
+ */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: var(--star-from, 0.5);
+  }
+  50% {
+    opacity: var(--star-to, 0.95);
+  }
+}
+.stars-twinkle {
+  animation: star-twinkle 5s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/*
+ * Seamless right→left background drift. Animates ONLY transform (translateX) on a
+ * 200%-wide track holding two identical star halves, so when it has shifted one
+ * screen the loop repeats with no jump. Compositor-only → smooth 60fps, off the
+ * main thread, zero effect on scrolling.
+ */
+@keyframes bg-drift-x {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.bg-drift {
+  animation-name: bg-drift-x;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-drift {
+    animation: none;
+  }
+}
+
+/*
+ * Cruisers flying across the hero (right → left). Animates ONLY transform (translateX)
+ * + opacity via CSS keyframes → compositor thread, off the main thread, never janks.
+ */
+.ship-cross {
+  position: absolute;
+  left: 100%;
+  opacity: 0;
+  animation-name: ship-cross;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes ship-cross {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.85;
+  }
+  94% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(-135vw, 0, 0);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ship-cross {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Individual star dot for <StarField> — twinkles via opacity only (compositor). */
+.star {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0.5;
+  animation-name: star-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .star {
+    animation: none;
+  }
+}
+.stars-twinkle--slow {
+  animation-duration: 8s;
+  animation-delay: -3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stars-twinkle {
+    animation: none;
+  }
+}
+
+/*
+ * Falling meteors. Animates ONLY transform + opacity via CSS keyframes → compositor
+ * thread, off the main thread, so it never blocks scrolling. The glowing tail is a
+ * gradient (part of the layer, moves without re-rastering); no box-shadow / filter.
+ */
+.meteor {
+  position: absolute;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(153, 223, 175, 0.35) 70%,
+    rgba(255, 255, 255, 0.95) 100%
+  );
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(40deg);
+  animation-name: meteor-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes meteor-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(40deg);
+  }
+  6% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(70vw, 95vh, 0) rotate(40deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meteor {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/*
+ * Sky "breathing" — a very slow opacity pulse for the starfield photo backdrop.
+ * Opacity is compositor-only, so this makes the sky feel alive at ~zero cost.
+ */
+@keyframes sky-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.sky-pulse {
+  animation: sky-pulse 12s ease-in-out infinite;
+  will-change: opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sky-pulse {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* Green→blue brand gradient text helper. */
+.text-brand-gradient {
+  background: linear-gradient(90deg, #99dfaf 0%, #5aa9e6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .animated-text {
@@ -40,4 +262,228 @@ body {
   background: #99dfaf;
   box-shadow: 0 0 5px 0 #12111d;
   border-radius: 10px;
+}
+
+/* ============================================================================
+ * Launch loader — intro rocket lift-off. All motion is transform/opacity (CSS
+ * keyframes → compositor thread, 60fps). Timeline: 0–1.8s ignition (shake +
+ * flame grows + smoke), 1.9s lift-off, 2.8–3.5s overlay fades to reveal the hero.
+ * ========================================================================== */
+
+/* Overlay fades out near the end, then React unmounts it at 3.5s. */
+.launch-loader {
+  animation: loader-out 0.7s ease-in 2.8s forwards;
+}
+@keyframes loader-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Lift-off: rocket flies up and out of the screen. */
+.rocket-rise {
+  animation: rocket-rise 1.2s cubic-bezier(0.5, 0, 0.85, 0.3) 1.9s forwards;
+}
+@keyframes rocket-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, -135vh, 0);
+  }
+}
+
+/* Ignition shake (runs ~1.8s, then stops before lift-off). */
+.rocket-shake {
+  display: block;
+  animation: rocket-shake 0.08s linear 0s 22;
+}
+@keyframes rocket-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.5px);
+  }
+  75% {
+    transform: translateX(1.5px);
+  }
+}
+
+/* Engine flame: grows on ignition (wrapper) and flickers (inner). */
+.flame-wrap {
+  transform-origin: top center;
+  animation: flame-grow 1.9s ease-in forwards;
+}
+@keyframes flame-grow {
+  0% {
+    transform: translateX(-50%) scaleY(0.15);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scaleY(1.5);
+    opacity: 1;
+  }
+}
+.flame {
+  width: 26px;
+  height: 64px;
+  transform-origin: top center;
+  border-radius: 50% 50% 50% 50% / 22% 22% 78% 78%;
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #99dfaf 16%,
+    #ffd56a 46%,
+    #ff7a00 78%,
+    rgba(255, 122, 0, 0) 100%
+  );
+  animation: flame-flicker 0.12s ease-in-out infinite;
+}
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scaleY(1.18) scaleX(0.9);
+    opacity: 1;
+  }
+}
+
+/* Launch smoke: puffs out and disperses during ignition. */
+.smoke {
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(200, 210, 230, 0.45),
+    transparent 65%
+  );
+  opacity: 0;
+  animation: smoke-puff 2s ease-out forwards;
+}
+.smoke--2 {
+  width: 170px;
+  height: 170px;
+  animation-delay: 0.25s;
+}
+@keyframes smoke-puff {
+  0% {
+    transform: translateX(-50%) scale(0.2);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-50%) scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Caption fades out as the rocket leaves. */
+.loader-caption {
+  animation: caption-out 0.5s ease-in 1.9s forwards;
+}
+@keyframes caption-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Stars falling downward inside the loader (track moves down, seamless loop). */
+.star-fall {
+  animation: star-fall 5s linear infinite;
+  will-change: transform;
+}
+@keyframes star-fall {
+  from {
+    transform: translate3d(0, -50%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/*
+ * Station "lands / recreates" in the hero once the loader reveals it. Descends from
+ * above + fades/scales in. Delayed to line up with the loader fade-out (~3.0s).
+ * transform + opacity only → compositor. `both` keeps it hidden until it starts.
+ */
+.station-arrive {
+  animation: station-arrive 1.6s cubic-bezier(0.16, 1, 0.3, 1) 3s both;
+}
+@keyframes station-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-fall,
+  .station-arrive {
+    animation: none;
+  }
+}
+
+/*
+ * Rocket fly-by in the hero (AFTER the loader launch): the rocket descends, loops
+ * once over the scene, then exits to the left. Follows a CSS Motion Path; offset-rotate
+ * keeps the nose aligned with the curve. transform/offset → compositor, one-shot.
+ * Delayed ~4.6s so it starts once the loader is gone and the station has landed.
+ */
+.rocket-flyby-ship {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* offset-path is set per-ship inline (different exit each pass).
+     The rocket SVG points up (nose at -90°/270°), so +90° keeps the nose
+     pointing along the path direction. */
+  offset-rotate: auto 90deg;
+  offset-distance: 0%;
+  opacity: 0;
+  animation-name: rocket-flyby;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: offset-distance, opacity;
+}
+/* Flies across in the first ~24% of the cycle, then stays hidden until it repeats,
+   so it only appears occasionally. */
+@keyframes rocket-flyby {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  1.5% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 1;
+  }
+  20% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rocket-flyby-ship {
+    animation: none;
+    opacity: 0;
+  }
 }

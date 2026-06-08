@@ -1,26 +1,24 @@
 import React from "react";
-import Index from "../Components/Index";
-import Body from "../Components/Body";
-import Service from "../Components/Service";
-import Team from "../Components/Team";
-import Contact from "../Components/Contact";
+import { MotionProvider } from "../Components/motion/space-primitives";
+import Hero from "../Components/rebrand/Hero";
+import Products from "../Components/rebrand/Products";
+import Services from "../Components/rebrand/Services";
+import TeamSection from "../Components/rebrand/TeamSection";
+import CTA from "../Components/rebrand/CTA";
+import Footer from "../Components/rebrand/Footer";
 
-const Home = (props) => {
+const Home = () => {
   return (
-    <div className="flex flex-col">
-      <Index />
-      <Body />
-      <div className="relative -z-10">
-        <img
-          src="/images/white.png"
-          alt="white"
-          className="absolute right-0 top-0"
-        />
+    <MotionProvider>
+      <div className="flex flex-col bg-space">
+        <Hero />
+        <Products />
+        <Services />
+        <TeamSection />
+        <CTA />
+        <Footer />
       </div>
-      <Service />
-      <Team />
-      <Contact />
-    </div>
+    </MotionProvider>
   );
 };
 

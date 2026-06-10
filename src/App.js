@@ -32,6 +32,43 @@ function App() {
       logEvent(analytics, "page_view");
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const root = document.documentElement;
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    const updateScrollDirection = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY) {
+        root.dataset.scrollDirection = "down";
+      } else if (currentScrollY < lastScrollY) {
+        root.dataset.scrollDirection = "up";
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateScrollDirection);
+        ticking = true;
+      }
+    };
+
+    root.dataset.scrollDirection = "down";
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      delete root.dataset.scrollDirection;
+    };
+  }, []);
+
   return (
     <div className="App">
       <LaunchLoader />

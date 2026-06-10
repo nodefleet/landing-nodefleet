@@ -157,7 +157,7 @@ const ProductLogo = ({ product }) => {
     <img
       src={product.logo}
       alt={product.name}
-      className={` ${product.name === "DataHub" ? "h-20 w-auto" : "h-8 w-auto"}`}
+      className={` ${product.name === "DataHub" || product.name === "BotFleet" ? "h-20 w-auto" : "h-8 w-auto"}`}
     />
   );
 };

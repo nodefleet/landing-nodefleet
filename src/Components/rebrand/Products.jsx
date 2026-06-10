@@ -114,10 +114,10 @@ const PRODUCTS_BY_TAB = {
       ],
     },
     {
-      logoVariant: "text",
       logoLabel: "BotFleet",
       logoAccent: "AI",
       name: "BotFleet",
+      logo: "https://appbot.nyc3.digitaloceanspaces.com/BotFleet/logo_nav.png",
       href: "https://botfleet.net/",
       badge: "Automation for modern ops",
       body: [

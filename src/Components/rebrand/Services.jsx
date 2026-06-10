@@ -79,14 +79,14 @@ const Services = () => {
             <div className="relative z-10">
               <Reveal
                 as="h2"
-                className="text-center text-5xl font-bold max-sm:text-3xl"
+                className="text-center text-5xl font-bold max-sm:text-2xl"
               >
                 <span className="text-green-300 italic">Fleet-Powered</span>{" "}
                 Services
               </Reveal>
               <Reveal
                 delay={0.1}
-                className="mt-4 text-center text-lg text-gray-400"
+                className="mt-4 text-center sm:text-lg text-sm text-gray-400"
               >
                 When you need the team,{" "}
                 <span className="italic">not just the platform</span>.
@@ -96,20 +96,22 @@ const Services = () => {
                 {SERVICES.map((s) => (
                   <StaggerItem
                     key={s.title}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 py-12 max-sm:p-6"
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 py-12 backdrop-blur-md max-sm:p-6"
                   >
                     <div className="flex items-center gap-2">
                       <img
                         src={s.icon}
                         alt=""
                         aria-hidden="true"
-                        className="h-8 w-8"
+                        className="sm:h-8 sm:w-8 w-5 h-5"
                       />
-                      <h3 className="text-xl font-semibold text-white">
+                      <h3 className="sm:text-xl text-md font-semibold text-white">
                         {s.title}
                       </h3>
                     </div>
-                    <p className="mt-2 text-gray-400">{s.body}</p>
+                    <p className="mt-2 max-sm:text-sm text-gray-200">
+                      {s.body}
+                    </p>
                   </StaggerItem>
                 ))}
               </Stagger>

@@ -45,7 +45,7 @@ const CTA = () => {
             </Reveal>
             <Reveal
               delay={0.1}
-              className="mx-auto mt-5 max-w-xl text-lg text-gray-400"
+              className="mx-auto mt-5 max-w-xl sm:text-lg text-md text-gray-400"
             >
               Launch, scale, and operate with confidence using high-performance
               blockchain infrastructure.

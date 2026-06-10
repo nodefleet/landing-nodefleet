@@ -11,37 +11,86 @@ const MEMBERS = [
   {
     name: "Kael Abbott",
     role: "Co-Founder & CEO",
-    bio: "Has a wide experience working on python/django.",
+    bio: (
+      <>
+        Co-founder and CEO focused on building products with{" "}
+        <span className="text-primary">Python</span> and{" "}
+        <span className="text-primary">Django</span>, with a strong eye for
+        product quality and execution.
+      </>
+    ),
     photo: "/assets/team/kael.png",
   },
   {
     name: "Jonathan Maria",
     role: "SRE",
-    bio: "Ex-Ethereum Foundation. Specialist in cross-chain bridge architecture and EVM internals.",
+    bio: (
+      <>
+        Software Developer and <span className="text-primary">DevOps</span>{" "}
+        Engineer passionate about building reliable digital solutions,
+        automating <span className="text-primary">infrastructure</span>, and
+        supporting <span className="text-primary">blockchain</span> and{" "}
+        <span className="text-primary">cloud-based systems</span>.
+      </>
+    ),
     photo: "/assets/team/jhonathan.jpg",
   },
   {
     name: "Carlos Peña",
     role: "COO",
-    bio: "Led DevOps at two blockchain unicorns. Obsessed with 99.99% uptime.",
+    bio: (
+      <>
+        Strategic finance and analytics professional passionate about{" "}
+        <span className="text-primary">blockchain infrastructure</span>,{" "}
+        <span className="text-primary">decentralized technologies</span>, and
+        sustainable value creation.
+      </>
+    ),
     photo: "/assets/team/carlos.jpg",
   },
   {
     name: "Juan Carlos Abreu",
-    role: "Lead Engineer",
-    bio: "Built core consensus modules for Solana validators. Deep Rust + Go expertise.",
+    role: "Full-Stack Engineer",
+    bio: (
+      <>
+        Builds modern digital products across{" "}
+        <span className="text-primary">frontend</span>,{" "}
+        <span className="text-primary">backend</span>,{" "}
+        <span className="text-primary">AI</span>, and{" "}
+        <span className="text-primary">blockchain systems</span>, with strong
+        experience in <span className="text-primary">React</span>,{" "}
+        <span className="text-primary">TypeScript</span>,{" "}
+        <span className="text-primary">Node.js</span>,{" "}
+        <span className="text-primary">Python</span>, and{" "}
+        <span className="text-primary">Django</span>.
+      </>
+    ),
     photo: "/assets/team/juancarlos.jpeg",
   },
   {
     name: "Katherine Andujar",
     role: "Product Manager",
-    bio: "Web3 UI/UX professional designer experienced in fintech startup products.",
+    bio: (
+      <>
+        Product manager and <span className="text-primary">Web3</span>{" "}
+        <span className="text-primary">UI/UX</span> designer with experience
+        shaping <span className="text-primary">fintech</span> products and clear
+        user experiences.
+      </>
+    ),
     photo: "/assets/team/katerine.png",
   },
   {
     name: "Lowell Abbott",
     role: "Founder & Advisor",
-    bio: "Former Devops Lead of Pocket Network and CEO of nodefleet.org.",
+    bio: (
+      <>
+        Former <span className="text-primary">DevOps</span> Lead at{" "}
+        <span className="text-primary">Pocket Network</span> and CEO of{" "}
+        <span className="text-primary">nodefleet.org</span>, with deep
+        experience in infrastructure and operations.
+      </>
+    ),
     photo: "/assets/team/lowell.png",
   },
 ];
@@ -68,7 +117,7 @@ const TeamSection = () => {
         </Reveal>
         <Reveal
           delay={0.1}
-          className="mx-auto mt-4 max-w-2xl text-center text-lg text-gray-400"
+          className="mx-auto mt-4 max-w-2xl text-center sm:text-lg text-md text-gray-400"
         >
           The builders behind Nodefleet — protocol engineers, infrastructure
           architects, <span className="italic">and chain operators</span>.
@@ -83,14 +132,14 @@ const TeamSection = () => {
                     src={m.photo}
                     alt={m.name}
                     loading="lazy"
-                    className="h-14 w-14 rounded-full object-cover ring-2 ring-white/10"
+                    className="sm:h-14 sm:w-14 w-10 h-10 rounded-full object-cover object-center ring-2 ring-white/10"
                   />
                   <div>
                     <h3 className="font-semibold text-white">{m.name}</h3>
                     <p className="text-sm text-primary">{m.role}</p>
                   </div>
                 </div>
-                <p className="mt-5 text-gray-400">{m.bio}</p>
+                <p className="mt-5 text-gray-400 max-sm:text-sm">{m.bio}</p>
               </TiltCard>
             </StaggerItem>
           ))}

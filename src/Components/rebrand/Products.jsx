@@ -26,7 +26,7 @@ const PRODUCTS_BY_TAB = {
       logo: "/assets/icons/fleetwallet.svg",
       name: "fleetwallet",
       href: "https://fleetwallet.nodefleet.net/",
-      badge: "Deploy your chain like a fleet",
+      badge: "Every chain in your fleet.",
       body: [
         "Self-custody multi-chain wallet for builders and operators. EVM, Cosmos, Bitcoin and more - keys in your hands, signing audited by trust-wallet-core, UX built for people who deploy chains for a living.",
       ],
@@ -57,41 +57,60 @@ const PRODUCTS_BY_TAB = {
   ],
   Storage: [
     {
-      logoVariant: "text",
       logoLabel: "DataHub",
       logoAccent: "Storage",
+      logo: "/assets/icons/datahub.svg",
       name: "DataHub",
       href: "https://datahub.nodefleet.net",
-      badge: "Storage for fleet-scale data",
+      badge: "Own your files. Store without limits",
       body: [
         "Private storage designed for teams that need fast access, clean structure, and dependable delivery.",
         "A branded storage layer for Nodefleet products, built to keep your operational data organized and ready to ship.",
       ],
       features: [
         "Object storage",
-        "Team access controls",
-        "Fast retrieval",
-        "Fleet-ready workflows",
+        "Decentralized",
+        "Fast Upload and Downloads",
+        "Web3-Native Payments",
       ],
     },
   ],
   "Artificial Intelligence": [
     {
-      logoVariant: "text",
+      logoLabel: "poktai",
+      logoAccent: "AI",
+      name: "POKTAI",
+      href: "https://pokt.ai/",
+      logo: "/assets/icons/poktai.png",
+      badge: "Build the Future of Web3 Infrastructure",
+      body: [
+        "Build faster, scale better, and optimize costs with our intelligent RPC gateway built on top of Pocket Network Shannon + PATH.",
+      ],
+      features: [
+        "Lighting Fast",
+        "Enterprise Security",
+        "Global Network",
+        "Realtime Analytics",
+        "Pay As You Go",
+      ],
+    },
+    {
       logoLabel: "AIViber",
       logoAccent: "AI",
       name: "AIViber",
+      logo: "/assets/icons/AIVIBER.svg",
       href: "https://aiviber.io/",
-      badge: "AI tools for operators",
+      badge: "Four layers. One context plane for agents.",
       body: [
         "AI-powered workflows for teams that want smarter product ops, faster decisions, and cleaner automation.",
         "Designed as a native Nodefleet companion with a bold brand presence and an operator-first mindset.",
       ],
       features: [
-        "Agent workflows",
-        "Automation prompts",
-        "Smart analysis",
-        "Brand-native UI",
+        "Persistent Memory for AI Agentss",
+        "Shared Memory Across Projects",
+        "Skillset and Agent Dispatch",
+        "Token-Efficient Language",
+        "Governed & Multi Tenant",
       ],
     },
     {
@@ -116,7 +135,7 @@ const PRODUCTS_BY_TAB = {
 };
 
 const Check = () => (
-  <span className="sm:h-6 sm:w-6 w-4 h-4 flex items-center justify-center shrink-0 place-items-center rounded-full border border-primary/40 sm:text-sm text-xs text-primary">
+  <span className="sm:h-6 sm:w-6 w-5 h-5 flex items-center justify-center shrink-0 place-items-center rounded-full  bg-green-300/20 sm:text-sm text-xs text-primary">
     ✓
   </span>
 );
@@ -134,7 +153,13 @@ const ProductLogo = ({ product }) => {
     );
   }
 
-  return <img src={product.logo} alt={product.name} className="h-8 w-auto" />;
+  return (
+    <img
+      src={product.logo}
+      alt={product.name}
+      className={` ${product.name === "DataHub" ? "h-20 w-auto" : "h-8 w-auto"}`}
+    />
+  );
 };
 
 const Products = () => {
@@ -215,9 +240,9 @@ const Products = () => {
                       rel="noopener noreferrer"
                       className="mt-8 inline-flex items-center gap-2 font-semibold text-white hover:text-primary"
                     >
-                      <span className="sm:h-6 sm:w-6 w-4 h-4 flex items-center justify-center shrink-0 place-items-center rounded-full bg-white text-space-deep">
-                        →
-                      </span>
+                      <div className="sm:h-6 sm:w-6 w-5 h-5 flex items-center justify-center rounded-full bg-white text-space-deep">
+                        <span className="-translate-y-[1px]">→</span>
+                      </div>
                       Get Started
                     </a>
                   </div>

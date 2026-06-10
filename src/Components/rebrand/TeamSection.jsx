@@ -13,10 +13,9 @@ const MEMBERS = [
     role: "Co-Founder & CEO",
     bio: (
       <>
-        Co-founder and CEO focused on building products with{" "}
-        <span className="text-primary">Python</span> and{" "}
-        <span className="text-primary">Django</span>, with a strong eye for
-        product quality and execution.
+        Co-founded the company in <span className="text-primary">2022</span>,
+        leading backend, DevOps, and blockchain infrastructure with strong
+        experience deploying, operating, and scaling validator node systems.
       </>
     ),
     photo: "/assets/team/kael.png",
@@ -82,13 +81,14 @@ const MEMBERS = [
   },
   {
     name: "Lowell Abbott",
-    role: "Founder & Advisor",
+    role: "Co-Founder & Advisor",
     bio: (
       <>
-        Former <span className="text-primary">DevOps</span> Lead at{" "}
-        <span className="text-primary">Pocket Network</span> and CEO of{" "}
-        <span className="text-primary">nodefleet.org</span>, with deep
-        experience in infrastructure and operations.
+        Co-founder of <span className="text-primary">nodefleet </span> and
+        ex-lead on <span className="text-primary">Pocket Network</span> Obsessed
+        with{" "}
+        <span className="text-primary">optimization and user experience</span>,
+        with new edge technologies on infrastructure use cases.
       </>
     ),
     photo: "/assets/team/lowell.png",

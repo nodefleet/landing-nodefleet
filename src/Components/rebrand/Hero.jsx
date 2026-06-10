@@ -20,6 +20,16 @@ const STATS = [
   { to: 6, suffix: "+", label: "Edge regions" },
 ];
 
+const handleNavigation = (e, hash) => {
+  if (hash) {
+    e.preventDefault();
+    const target = document.querySelector(hash);
+    if (target) {
+      window.scrollTo({ top: target.offsetTop, behavior: "smooth" });
+    }
+  }
+};
+
 const Hero = () => {
   return (
     <section
@@ -120,6 +130,7 @@ const Hero = () => {
             </a>
             <a
               href="#products"
+              onClick={(e) => handleNavigation(e, "#products")}
               className="rounded-full border border-white/20 px-7 py-3 font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5"
             >
               Explore Products

@@ -107,7 +107,7 @@ const Hero = () => {
           >
             The <span className="italic">future</span> cloud
             <br />
-            <span className="text-primary-300 italic">infrastructure</span>
+            <span className="text-brand-gradient italic">infrastructure</span>
           </Reveal>
 
           <Reveal

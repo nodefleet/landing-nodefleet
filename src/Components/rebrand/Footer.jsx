@@ -22,7 +22,7 @@ const COLUMNS = [
   {
     title: "Company",
     links: [
-      { label: "Portfolio", href: "#" },
+      { label: "Portfolio", href: "https://canva.link/nodefleet" },
       { label: "Support", href: TELEGRAM },
     ],
   },
